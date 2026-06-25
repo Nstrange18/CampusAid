@@ -12,9 +12,10 @@ cloudinary.config(
 )
 
 def upload_to_cloudinary(file: UploadFile, folder: str = "campusaid") -> str:
+    cloudinary_folder = f"CampusAid/{folder}" if folder else "CampusAid"
     result = cloudinary.uploader.upload(
         file.file,
-        folder=folder,
+        folder=cloudinary_folder,
         resource_type="auto"
     )
     return result.get("secure_url")
