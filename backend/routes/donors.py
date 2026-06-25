@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
+from ..utils import validate_upload_file
+
 
 router = APIRouter(prefix="/donors", tags=["Donors"])
 
@@ -75,6 +77,9 @@ def upload_donation_proof(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot upload proof for an already reviewed donation"
         )
+
+    # Validate file format and size
+    validate_upload_file(file)
 
     # Save proof file locally
     file_ext = os.path.splitext(file.filename)[1]

@@ -48,11 +48,11 @@ export const AdminRequestReview = () => {
 
   if (error || !request) {
     return (
-      <div className="bg-red-50 p-6 rounded-2xl border border-red-205 text-center space-y-4 max-w-md mx-auto">
+      <div className="bg-red-50 dark:bg-red-955/20 p-6 rounded-2xl border border-red-200 dark:border-red-900/30 text-center space-y-4 max-w-md mx-auto">
         <AlertCircle className="h-10 w-10 text-red-500 mx-auto" />
-        <h4 className="font-bold text-red-800">Error</h4>
-        <p className="text-xs text-red-700">{error || "Application not found"}</p>
-        <button onClick={() => navigate('/admin/requests')} className="px-4 py-2 bg-red-650 text-white rounded-lg text-xs font-bold">
+        <h4 className="font-bold text-red-800 dark:text-red-400">Error</h4>
+        <p className="text-xs text-red-700 dark:text-red-300">{error || "Application not found"}</p>
+        <button onClick={() => navigate('/admin/requests')} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors">
           Back to List
         </button>
       </div>
@@ -64,13 +64,13 @@ export const AdminRequestReview = () => {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate('/admin/requests')}
-          className="p-2 hover:bg-slate-100 rounded-xl transition-all border border-slate-200"
+          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer"
         >
-          <ArrowLeft className="h-4 w-4 text-slate-600" />
+          <ArrowLeft className="h-4 w-4" />
         </button>
         <div>
-          <h3 className="text-lg font-bold text-slate-800">Application Audit</h3>
-          <p className="text-xs text-slate-500">Review student bio, statement, and upload logs</p>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Application Audit</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Review student bio, statement, and upload logs</p>
         </div>
       </div>
 
@@ -80,107 +80,111 @@ export const AdminRequestReview = () => {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Card: Student details */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <User className="h-5 w-5 text-blue-600" />
-              <h4 className="font-bold text-slate-800 text-sm">Student Demographics</h4>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
+            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <User className="h-5 w-5 text-blue-600 dark:text-blue-450" />
+              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Student Demographics</h4>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-600">
-              <p><span className="text-slate-400">Full Name:</span> {request.student?.user?.full_name}</p>
-              <p><span className="text-slate-400">Matric Number:</span> {request.student?.matric_number}</p>
-              <p><span className="text-slate-400">Faculty/Dept:</span> {request.student?.faculty} / {request.student?.department}</p>
-              <p><span className="text-slate-400">Level:</span> {request.student?.level}</p>
-              <p><span className="text-slate-400">Email Address:</span> {request.student?.user?.email}</p>
-              <p><span className="text-slate-400">Phone Number:</span> {request.student?.user?.phone_number}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              <p><span className="text-slate-400 dark:text-slate-500">Full Name:</span> {request.student?.user?.full_name}</p>
+              <p><span className="text-slate-400 dark:text-slate-500">Matric Number:</span> {request.student?.matric_number}</p>
+              <p><span className="text-slate-400 dark:text-slate-500">Faculty/Dept:</span> {request.student?.faculty} / {request.student?.department}</p>
+              <p><span className="text-slate-400 dark:text-slate-500">Level:</span> {request.student?.level}</p>
+              <p><span className="text-slate-400 dark:text-slate-500">Email Address:</span> {request.student?.user?.email}</p>
+              <p><span className="text-slate-400 dark:text-slate-500">Phone Number:</span> {request.student?.user?.phone_number}</p>
             </div>
           </div>
 
           {/* Card: Campaign Statement */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Bookmark className="h-5 w-5 text-blue-600" />
-              <h4 className="font-bold text-slate-800 text-sm">Campaign Statement</h4>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
+            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <Bookmark className="h-5 w-5 text-blue-600 dark:text-blue-455" />
+              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Campaign Statement</h4>
             </div>
 
             <div className="space-y-3">
-              <h5 className="font-extrabold text-slate-800 text-xs">{request.title}</h5>
-              <p className="text-xs text-slate-550 leading-relaxed leading-loose">{request.description}</p>
+              <h5 className="font-extrabold text-slate-800 dark:text-slate-100 text-xs">{request.title}</h5>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{request.description}</p>
               
-              <div className="p-4 bg-slate-50 border border-slate-150 rounded-xl space-y-1.5 text-xs text-slate-500">
-                <p><span className="font-bold text-slate-700">Financial Need Reason:</span> {request.reason_for_request}</p>
-                <p><span className="font-bold text-slate-700">Parent/Guardian Occupation:</span> {request.parent_or_guardian_occupation}</p>
-                <p><span className="font-bold text-slate-700">Received Support Previously:</span> <span className="capitalize font-semibold text-slate-800">{request.previous_support_received}</span></p>
+              <div className="p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
+                <p><span className="font-bold text-slate-700 dark:text-slate-350">Financial Need Reason:</span> {request.reason_for_request}</p>
+                <p><span className="font-bold text-slate-700 dark:text-slate-350">Parent/Guardian Occupation:</span> {request.parent_or_guardian_occupation}</p>
+                <p><span className="font-bold text-slate-700 dark:text-slate-350">Received Support Previously:</span> <span className="capitalize font-semibold text-slate-800 dark:text-slate-200">{request.previous_support_received}</span></p>
                 <p className="italic pt-2">"<span className="font-medium">{request.supporting_statement}</span>"</p>
               </div>
             </div>
           </div>
 
           {/* Card: Bank disbursements */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Landmark className="h-5 w-5 text-blue-600" />
-              <h4 className="font-bold text-slate-800 text-sm">Student Bank Account</h4>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
+            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <Landmark className="h-5 w-5 text-blue-600 dark:text-blue-450" />
+              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Student Bank Account (Private)</h4>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-semibold text-slate-650">
-              <p><span className="text-slate-400">Bank Name:</span> {request.student_bank_name}</p>
-              <p><span className="text-slate-400">Account Name:</span> {request.student_account_name}</p>
-              <p><span className="text-slate-400">Account Number:</span> {request.student_account_number}</p>
-            </div>
+            {request.student_bank_name ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                <p><span className="text-slate-400 dark:text-slate-500">Bank Name:</span> {request.student_bank_name}</p>
+                <p><span className="text-slate-400 dark:text-slate-500">Account Name:</span> {request.student_account_name}</p>
+                <p><span className="text-slate-400 dark:text-slate-500">Account Number:</span> {request.student_account_number}</p>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-455 italic">No direct bank details provided. Disbursement must be made directly to the school or service vendor.</p>
+            )}
           </div>
 
         </div>
 
         {/* Audit sidebar: Checklist triggers and attached files */}
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
-            <h4 className="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3">Audit Control</h4>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5 transition-colors duration-300">
+            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm border-b border-slate-100 dark:border-slate-800 pb-3">Audit Control</h4>
 
             <div className="space-y-3.5 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-500">Urgency:</span>
-                <span className="font-bold uppercase tracking-wider text-red-600">{request.urgency_level}</span>
+                <span className="text-slate-500 dark:text-slate-400">Urgency:</span>
+                <span className="font-bold uppercase tracking-wider text-red-600 dark:text-red-400">{request.urgency_level}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Target Goal:</span>
-                <span className="font-bold text-slate-800">₦{request.amount_needed.toLocaleString()}</span>
+                <span className="text-slate-500 dark:text-slate-400">Target Goal:</span>
+                <span className="font-bold text-slate-800 dark:text-slate-100">₦{request.amount_needed.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Submitted:</span>
-                <span className="text-slate-600">{new Date(request.date_submitted).toLocaleDateString()}</span>
+                <span className="text-slate-500 dark:text-slate-400">Submitted:</span>
+                <span className="text-slate-600 dark:text-slate-300">{new Date(request.date_submitted).toLocaleDateString()}</span>
               </div>
             </div>
 
-            <div className="h-[1px] bg-slate-100" />
+            <div className="h-[1px] bg-slate-100 dark:bg-slate-800" />
 
             <Link
               to={`/admin/requests/${request.request_id}/checklist`}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold tracking-wide transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5"
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold tracking-wide transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <CheckSquare className="h-4.5 w-4.5" />
               Open Audit Checklist
             </Link>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <h5 className="font-bold text-slate-700 text-xs border-b border-slate-100 pb-2">Evidence Documents ({request.documents.length})</h5>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
+            <h5 className="font-bold text-slate-700 dark:text-slate-300 text-xs border-b border-slate-100 dark:border-slate-800 pb-2">Evidence Documents ({request.documents.length})</h5>
 
             {request.documents.length === 0 ? (
-              <p className="text-[10px] text-slate-400 italic">No files attached by the student.</p>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">No files attached by the student.</p>
             ) : (
               <div className="space-y-2.5">
                 {request.documents.map((doc) => (
-                  <div key={doc.document_id} className="p-3 bg-slate-50 border border-slate-150 hover:border-slate-250 rounded-xl transition-all flex items-center justify-between gap-3">
+                  <div key={doc.document_id} className="p-3 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 hover:border-slate-350 dark:hover:border-slate-700 rounded-xl transition-all flex items-center justify-between gap-3">
                     <div className="space-y-0.5 min-w-0">
-                      <p className="font-bold text-slate-800 text-[10px] truncate">{getDocLabel(doc.document_type)}</p>
-                      <p className="text-[8px] text-slate-400">Date: {new Date(doc.upload_date).toLocaleDateString()}</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-100 text-[10px] truncate">{getDocLabel(doc.document_type)}</p>
+                      <p className="text-[8px] text-slate-400 dark:text-slate-500">Date: {new Date(doc.upload_date).toLocaleDateString()}</p>
                     </div>
                     <a
                       href={`${API_URL}${doc.file_path}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-1.5 bg-white border border-slate-200 hover:bg-blue-50 text-blue-600 rounded-lg hover:border-blue-200 transition-all shrink-0"
+                      className="p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-blue-50 dark:hover:bg-blue-955/40 text-blue-600 dark:text-blue-400 rounded-lg hover:border-blue-200 dark:hover:border-blue-800 transition-all shrink-0"
                       title="Open in new tab"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />

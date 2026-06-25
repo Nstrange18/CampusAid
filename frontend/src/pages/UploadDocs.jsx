@@ -91,11 +91,11 @@ export const UploadDocs = () => {
 
   if (error && !request) {
     return (
-      <div className="bg-red-50 p-6 rounded-2xl border border-red-200 text-center space-y-4 max-w-md mx-auto">
+      <div className="bg-red-50 dark:bg-red-950/20 p-6 rounded-2xl border border-red-200 dark:border-red-900/40 text-center space-y-4 max-w-md mx-auto transition-colors duration-300">
         <AlertCircle className="h-10 w-10 text-red-500 mx-auto" />
-        <h4 className="font-bold text-red-800">Error Loading Application</h4>
-        <p className="text-xs text-red-700">{error}</p>
-        <button onClick={() => navigate('/student/dashboard')} className="px-4 py-2 bg-red-650 text-white rounded-lg text-xs font-bold">
+        <h4 className="font-bold text-red-800 dark:text-red-400">Error Loading Application</h4>
+        <p className="text-xs text-red-700 dark:text-slate-350">{error}</p>
+        <button onClick={() => navigate('/student/dashboard')} className="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold">
           Back to Dashboard
         </button>
       </div>
@@ -103,29 +103,29 @@ export const UploadDocs = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate('/student/dashboard')}
-          className="p-2 hover:bg-slate-100 rounded-xl transition-all border border-slate-200"
+          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all border border-slate-200 dark:border-slate-800"
         >
-          <ArrowLeft className="h-4 w-4 text-slate-600" />
+          <ArrowLeft className="h-4 w-4 text-slate-600 dark:text-slate-300" />
         </button>
         <div>
-          <h3 className="text-lg font-bold text-slate-800">Verification Document Upload</h3>
-          <p className="text-xs text-slate-500">Application: <span className="font-semibold text-slate-700">{request.title}</span></p>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Verification Document Upload</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Application: <span className="font-semibold text-slate-700 dark:text-slate-300">{request.title}</span></p>
         </div>
       </div>
 
       {success && (
-        <div className="p-4 bg-emerald-50 border border-emerald-250 text-emerald-800 text-xs font-semibold rounded-2xl flex items-center gap-2">
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-xs font-semibold rounded-2xl flex items-center gap-2 transition-colors duration-300">
           <Check className="h-4.5 w-4.5 text-emerald-500" />
           {success}
         </div>
       )}
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-800 text-xs font-semibold rounded-2xl">
+        <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-400 text-xs font-semibold rounded-2xl transition-colors duration-300">
           {error}
         </div>
       )}
@@ -133,17 +133,17 @@ export const UploadDocs = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Upload Form Panel */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5 flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5 flex flex-col justify-between transition-colors duration-300">
           <div className="space-y-4">
-            <h4 className="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3">Upload Supporting File</h4>
+            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm border-b border-slate-100 dark:border-slate-800 pb-3">Upload Supporting File</h4>
             
             <form onSubmit={handleUpload} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-650">Document Type</label>
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Document Type</label>
                 <select
                   value={documentType}
                   onChange={(e) => setDocumentType(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all cursor-pointer"
                   required
                 >
                   <option value="school_fee_invoice">School Fee Invoice</option>
@@ -158,8 +158,8 @@ export const UploadDocs = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-650">Select File</label>
-                <div className="border-2 border-dashed border-slate-250 hover:border-blue-400 rounded-2xl p-6 text-center cursor-pointer transition-all bg-slate-50/50 hover:bg-blue-50/10 flex flex-col items-center justify-center space-y-2 relative">
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Select File</label>
+                <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-2xl p-6 text-center cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-950/20 hover:bg-blue-50/10 flex flex-col items-center justify-center space-y-2 relative">
                   <input
                     type="file"
                     id="file-input"
@@ -167,11 +167,11 @@ export const UploadDocs = () => {
                     className="absolute inset-0 opacity-0 cursor-pointer"
                     required
                   />
-                  <UploadCloud className="h-8 w-8 text-slate-400" />
-                  <p className="text-xs font-semibold text-slate-600">
+                  <UploadCloud className="h-8 w-8 text-slate-400 dark:text-slate-500" />
+                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate w-full max-w-[200px] px-2">
                     {selectedFile ? selectedFile.name : "Drag & Drop or Click to browse"}
                   </p>
-                  <p className="text-[9px] text-slate-400">PDF, PNG, JPG or DOCX up to 5MB</p>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500">PDF, PNG, JPG or DOCX up to 5MB</p>
                 </div>
               </div>
 
@@ -195,10 +195,10 @@ export const UploadDocs = () => {
             </form>
           </div>
 
-          <div className="pt-6 border-t border-slate-100 mt-6">
+          <div className="pt-6 border-t border-slate-100 dark:border-slate-800 mt-6">
             <button
               onClick={() => navigate('/student/dashboard')}
-              className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
+              className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-950 dark:hover:bg-slate-950/80 dark:border dark:border-slate-800 text-xs font-bold rounded-xl transition-all shadow-sm"
             >
               Finish & Done
             </button>
@@ -206,35 +206,35 @@ export const UploadDocs = () => {
         </div>
 
         {/* Uploaded Documents List */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 space-y-4">
-          <h4 className="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3">Currently Attached Documents</h4>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm lg:col-span-2 space-y-4 transition-colors duration-300">
+          <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm border-b border-slate-100 dark:border-slate-800 pb-3">Currently Attached Documents</h4>
 
           {request.documents.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
-              <FileText className="h-10 w-10 text-slate-350 mx-auto mb-2" />
+            <div className="text-center py-12 text-slate-400 dark:text-slate-500">
+              <FileText className="h-10 w-10 text-slate-400 dark:text-slate-600 mx-auto mb-2" />
               <p className="text-xs">No documents attached yet. Please upload supporting evidence to enable verification.</p>
             </div>
           ) : (
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-150">
+                  <tr className="bg-slate-50 dark:bg-slate-950/40 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
                     <th className="p-3 rounded-l-xl">Document Type</th>
                     <th className="p-3">Upload Date</th>
                     <th className="p-3 text-right rounded-r-xl">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-350">
                   {request.documents.map((doc) => (
-                    <tr key={doc.document_id} className="hover:bg-slate-50/50">
-                      <td className="p-3 text-slate-800 font-semibold">{getDocLabel(doc.document_type)}</td>
-                      <td className="p-3 text-slate-500">{new Date(doc.upload_date).toLocaleDateString()}</td>
+                    <tr key={doc.document_id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                      <td className="p-3 text-slate-800 dark:text-slate-100 font-semibold">{getDocLabel(doc.document_type)}</td>
+                      <td className="p-3 text-slate-500 dark:text-slate-400">{new Date(doc.upload_date).toLocaleDateString()}</td>
                       <td className="p-3 text-right">
                         <a
                           href={`${API_URL}${doc.file_path}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg font-bold hover:bg-blue-100/50 transition-all"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 rounded-lg font-bold hover:bg-blue-100/50 dark:hover:bg-blue-800/60 transition-all"
                         >
                           View File
                           <ExternalLink className="h-3.5 w-3.5" />

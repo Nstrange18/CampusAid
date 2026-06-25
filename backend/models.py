@@ -65,6 +65,7 @@ class Administrator(Base):
     donation_accounts = relationship("DonationAccount", back_populates="admin")
     reports = relationship("Report", back_populates="admin")
     verified_donations = relationship("DonationRecord", back_populates="verifier")
+    disbursements = relationship("Disbursement", back_populates="admin")
 
 
 class FundraisingRequest(Base):
@@ -80,9 +81,9 @@ class FundraisingRequest(Base):
     status = Column(String, default="pending")  # pending, approved, rejected, completed
     reason_for_request = Column(Text, nullable=False)
     urgency_level = Column(String, nullable=False)  # low, medium, high
-    student_bank_name = Column(String, nullable=False)
-    student_account_name = Column(String, nullable=False)
-    student_account_number = Column(String, nullable=False)
+    student_bank_name = Column(String, nullable=True)
+    student_account_name = Column(String, nullable=True)
+    student_account_number = Column(String, nullable=True)
     parent_or_guardian_occupation = Column(String, nullable=False)
     previous_support_received = Column(String, nullable=False)  # yes, no
     supporting_statement = Column(Text, nullable=False)
@@ -94,6 +95,7 @@ class FundraisingRequest(Base):
     documents = relationship("VerificationDocument", back_populates="request", cascade="all, delete-orphan")
     checklist = relationship("VerificationChecklist", back_populates="request", uselist=False, cascade="all, delete-orphan")
     donations = relationship("DonationRecord", back_populates="request", cascade="all, delete-orphan")
+    disbursements = relationship("Disbursement", back_populates="request", cascade="all, delete-orphan")
 
 
 class VerificationDocument(Base):
@@ -191,3 +193,23 @@ class Notification(Base):
 
     # Relationships
     user = relationship("User", back_populates="notifications")
+
+
+class Disbursement(Base):
+    __tablename__ = "disbursements"
+
+    disbursement_id = Column(Integer, primary_key=True, index=True)
+    request_id = Column(Integer, ForeignKey("fundraising_requests.request_id", ondelete="CASCADE"), nullable=False)
+    admin_id = Column(Integer, ForeignKey("administrators.admin_id", ondelete="SET NULL"), nullable=True)
+    recipient_type = Column(String, nullable=False)  # school, hostel, hospital, vendor, student_exception
+    recipient_name = Column(String, nullable=False)
+    amount_disbursed = Column(Float, nullable=False)
+    payment_reference = Column(String, nullable=False)
+    evidence_file = Column(String, nullable=True)
+    disbursement_status = Column(String, default="disbursed")  # pending, disbursed, failed
+    disbursement_notes = Column(Text, nullable=True)
+    disbursed_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # Relationships
+    request = relationship("FundraisingRequest", back_populates="disbursements")
+    admin = relationship("Administrator", back_populates="disbursements")

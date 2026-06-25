@@ -66,42 +66,42 @@ export const ProfilePage = () => {
   return (
     <div className="space-y-6">
       {success && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-2xl flex items-center gap-2">
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-xs font-semibold rounded-2xl flex items-center gap-2 transition-colors duration-300">
           <CheckCircle className="h-4.5 w-4.5 text-emerald-500" />
           Profile updated successfully!
         </div>
       )}
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-800 text-xs font-semibold rounded-2xl">
+        <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-400 text-xs font-semibold rounded-2xl transition-colors duration-300">
           {error}
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Card */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center text-center space-y-4">
-          <div className="h-20 w-20 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-2xl border-4 border-blue-50">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center text-center space-y-4 transition-colors duration-300">
+          <div className="h-20 w-20 rounded-full bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 flex items-center justify-center font-bold text-2xl border-4 border-blue-50 dark:border-blue-900/20">
             {user.full_name.charAt(0)}
           </div>
           <div>
-            <h3 className="font-bold text-lg text-slate-800">{user.full_name}</h3>
+            <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">{user.full_name}</h3>
             <p className="text-xs text-slate-400 capitalize">{user.role}</p>
           </div>
-          <div className="w-full h-[1px] bg-slate-100" />
+          <div className="w-full h-[1px] bg-slate-100 dark:bg-slate-800" />
           
           <div className="w-full space-y-3 text-left">
-            <div className="flex items-center gap-3 text-slate-600 text-xs">
-              <Mail className="h-4 w-4 text-slate-400 shrink-0" />
+            <div className="flex items-center gap-3 text-slate-600 dark:text-slate-350 text-xs">
+              <Mail className="h-4 w-4 text-slate-400 dark:text-slate-500 shrink-0" />
               <span className="truncate">{user.email}</span>
             </div>
-            <div className="flex items-center gap-3 text-slate-600 text-xs">
-              <Phone className="h-4 w-4 text-slate-400 shrink-0" />
+            <div className="flex items-center gap-3 text-slate-600 dark:text-slate-350 text-xs">
+              <Phone className="h-4 w-4 text-slate-400 dark:text-slate-500 shrink-0" />
               <span>{user.phone_number}</span>
             </div>
             {user.role === 'student' && (
-              <div className="flex items-center gap-3 text-slate-600 text-xs">
-                <GraduationCap className="h-4 w-4 text-slate-400 shrink-0" />
+              <div className="flex items-center gap-3 text-slate-600 dark:text-slate-350 text-xs">
+                <GraduationCap className="h-4 w-4 text-slate-400 dark:text-slate-500 shrink-0" />
                 <span>Matric: {user.matric_number}</span>
               </div>
             )}
@@ -109,22 +109,22 @@ export const ProfilePage = () => {
         </div>
 
         {/* Edit Form */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 space-y-6">
-          <h3 className="font-bold text-slate-850 border-b border-slate-100 pb-3">Update Profile Settings</h3>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm lg:col-span-2 space-y-6 transition-colors duration-300">
+          <h3 className="font-bold text-slate-800 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-3">Update Profile Settings</h3>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-600">Full Name</label>
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Full Name</label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                     <User className="h-4 w-4" />
                   </span>
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
+                    className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all"
                     disabled={user.role !== 'student'} // Edit allowed for students, others are static for now
                     required
                   />
@@ -132,16 +132,16 @@ export const ProfilePage = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-600">Phone Number</label>
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Phone Number</label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                     <Phone className="h-4 w-4" />
                   </span>
                   <input
                     type="tel"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
+                    className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all"
                     disabled={user.role !== 'student'}
                     required
                   />
@@ -151,63 +151,63 @@ export const ProfilePage = () => {
               {user.role === 'student' && (
                 <>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-600">Matric Number</label>
+                    <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Matric Number</label>
                     <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                         <GraduationCap className="h-4 w-4" />
                       </span>
                       <input
                         type="text"
                         value={matricNumber}
                         onChange={(e) => setMatricNumber(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all"
                         required
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-600">Faculty</label>
+                    <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Faculty</label>
                     <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                         <Landmark className="h-4 w-4" />
                       </span>
                       <input
                         type="text"
                         value={faculty}
                         onChange={(e) => setFaculty(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all"
                         required
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-600">Department</label>
+                    <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Department</label>
                     <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                         <BookOpen className="h-4 w-4" />
                       </span>
                       <input
                         type="text"
                         value={department}
                         onChange={(e) => setDepartment(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all"
                         required
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-600">Academic Level</label>
+                    <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Academic Level</label>
                     <div className="relative">
-                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                         <Layers className="h-4 w-4" />
                       </span>
                       <select
                         value={level}
                         onChange={(e) => setLevel(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all cursor-pointer"
                         required
                       >
                         <option>100 Level</option>
@@ -233,7 +233,7 @@ export const ProfilePage = () => {
                 {loading ? "Saving Changes..." : "Save Profile Details"}
               </button>
             ) : (
-              <p className="text-[10px] text-slate-400 italic">
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">
                 Only student profiles are dynamically editable in this release. Contact IT for administrative changes.
               </p>
             )}

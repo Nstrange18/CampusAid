@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
+from ..utils import validate_upload_file
+
 
 router = APIRouter(prefix="/students", tags=["Students"])
 
@@ -139,6 +141,9 @@ def upload_request_document(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot upload documents for requests that are already reviewed"
         )
+
+    # Validate file format and size
+    validate_upload_file(file)
 
     # Save file locally
     file_ext = os.path.splitext(file.filename)[1]
