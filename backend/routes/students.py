@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
 from ..utils import validate_upload_file
+from ..cloudinary_helper import upload_to_cloudinary
 
 
 router = APIRouter(prefix="/students", tags=["Students"])
@@ -145,16 +146,9 @@ def upload_request_document(
     # Validate file format and size
     validate_upload_file(file)
 
-    # Save file locally
-    file_ext = os.path.splitext(file.filename)[1]
-    unique_filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    # Upload to Cloudinary
+    db_file_path = upload_to_cloudinary(file, folder="verification_documents")
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    # Store in DB. Save relative path for easy serving
-    db_file_path = f"/uploads/{unique_filename}"
     new_doc = models.VerificationDocument(
         request_id=request.request_id,
         document_type=document_type,

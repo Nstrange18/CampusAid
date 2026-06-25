@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
 from ..utils import validate_upload_file
+from ..cloudinary_helper import upload_to_cloudinary
 
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -565,15 +566,9 @@ def upload_disbursement_evidence(
     # Validate file format and size
     validate_upload_file(file)
 
-    # Save file
-    file_ext = os.path.splitext(file.filename)[1]
-    unique_filename = f"disburse_{uuid.uuid4()}{file_ext}"
-    file_path = os.path.join(UPLOAD_DIR, unique_filename)
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-        
-    disbursement.evidence_file = f"/uploads/{unique_filename}"
+    # Upload to Cloudinary
+    evidence_url = upload_to_cloudinary(file, folder="disbursement_evidence")
+    disbursement.evidence_file = evidence_url
     db.commit()
     db.refresh(disbursement)
     return disbursement

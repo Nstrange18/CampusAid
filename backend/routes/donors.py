@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
 from ..utils import validate_upload_file
+from ..cloudinary_helper import upload_to_cloudinary
 
 
 router = APIRouter(prefix="/donors", tags=["Donors"])
@@ -81,15 +82,9 @@ def upload_donation_proof(
     # Validate file format and size
     validate_upload_file(file)
 
-    # Save proof file locally
-    file_ext = os.path.splitext(file.filename)[1]
-    unique_filename = f"proof_{uuid.uuid4()}{file_ext}"
-    file_path = os.path.join(UPLOAD_DIR, unique_filename)
-
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    donation.proof_file = f"/uploads/{unique_filename}"
+    # Upload to Cloudinary
+    proof_url = upload_to_cloudinary(file, folder="donation_proofs")
+    donation.proof_file = proof_url
     db.commit()
     db.refresh(donation)
 
