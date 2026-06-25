@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import { HeartHandshake, DollarSign, Calendar, Search, HelpCircle, Edit } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export const AdminCampaigns = () => {
   const [campaigns, setCampaigns] = useState([]);
@@ -25,10 +26,11 @@ export const AdminCampaigns = () => {
   const handleStatusChange = async (id, newStatus) => {
     try {
       await api.put(`/admin/campaigns/${id}`, { status: newStatus });
+      toast.success(`Campaign status updated to ${newStatus}!`);
       // Refresh campaign list
       fetchCampaigns();
     } catch (err) {
-      alert("Failed to update campaign status: " + err.message);
+      toast.error("Failed to update campaign status: " + err.message);
     }
   };
 

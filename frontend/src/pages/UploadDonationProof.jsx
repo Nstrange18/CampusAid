@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { UploadCloud, ArrowLeft, Send, Check, ShieldAlert, AlertCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export const UploadDonationProof = () => {
   const { id } = useParams(); // request_id
@@ -68,13 +69,16 @@ export const UploadDonationProof = () => {
       await api.uploadFile(`/donors/donations/${donationId}/proof`, selectedFile);
 
       setSuccess("Your donation proof has been uploaded! The administrator will review and verify it shortly.");
+      toast.success("Donation proof uploaded successfully!");
       
       // Redirect to donor history after a small delay
       setTimeout(() => {
         navigate('/donor/history');
       }, 2500);
     } catch (err) {
-      setError(err.message || "Failed to submit donation record. Ensure transaction reference is unique.");
+      const errorMsg = err.message || "Failed to submit donation record. Ensure transaction reference is unique.";
+      setError(errorMsg);
+      toast.error(errorMsg);
       setLoading(false);
     }
   };

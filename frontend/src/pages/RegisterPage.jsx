@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { GraduationCap, User, Phone, Mail, Lock, BookOpen, Layers, Landmark, Briefcase, FileText, Sun, Moon } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const registerSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -124,8 +125,11 @@ export const RegisterPage = () => {
     setLoading(true);
     try {
       await authRegister(payload);
+      toast.success("Account created successfully! Welcome to CampusAid.");
     } catch (err) {
-      setError(err.message || "Registration failed. Try again.");
+      const errorMsg = err.message || "Registration failed. Try again.";
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

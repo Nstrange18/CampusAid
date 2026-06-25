@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { GraduationCap, Lock, Mail, Eye, EyeOff, Sun, Moon } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email address"),
@@ -47,9 +48,12 @@ export const LoginPage = () => {
     setError("");
     try {
       const profile = await login(data.email, data.password);
+      toast.success("Login successful! Welcome back.");
       redirectUser(profile.role);
     } catch (err) {
-      setError(err.message || "Invalid credentials. Please try again.");
+      const errorMsg = err.message || "Invalid credentials. Please try again.";
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

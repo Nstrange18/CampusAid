@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api, API_URL } from '../api';
 import { DollarSign, Clock, Check, X, ExternalLink, Calendar, MessageSquare, AlertCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export const AdminDonations = () => {
   const [donations, setDonations] = useState([]);
@@ -31,10 +32,10 @@ export const AdminDonations = () => {
     
     try {
       await api.put(`/admin/donations/${id}/verify`);
-      alert("Donation verified successfully!");
+      toast.success("Donation verified successfully!");
       fetchPendingDonations();
     } catch (err) {
-      alert("Failed to verify donation: " + err.message);
+      toast.error("Failed to verify donation: " + err.message);
     }
   };
 
@@ -45,12 +46,12 @@ export const AdminDonations = () => {
     setSavingRejection(true);
     try {
       await api.put(`/admin/donations/${rejectingId}/reject`, { reason: rejectionReason });
-      alert("Donation declined. Feedback has been sent to the donor.");
+      toast.success("Donation declined. Feedback has been sent to the donor.");
       setRejectingId(null);
       setRejectionReason("");
       fetchPendingDonations();
     } catch (err) {
-      alert("Failed to decline record: " + err.message);
+      toast.error("Failed to decline record: " + err.message);
     } finally {
       setSavingRejection(false);
     }

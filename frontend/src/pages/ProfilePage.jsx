@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api';
 import { User, Phone, Mail, GraduationCap, BookOpen, Layers, Landmark, Save, CheckCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export const ProfilePage = () => {
   const { user, refreshUser } = useAuth();
@@ -54,8 +55,11 @@ export const ProfilePage = () => {
       
       await refreshUser();
       setSuccess(true);
+      toast.success("Profile updated successfully!");
     } catch (err) {
-      setError(err.message || "Failed to update profile");
+      const errorMsg = err.message || "Failed to update profile";
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api, API_URL } from '../api';
 import { CheckSquare, DollarSign, HeartHandshake, Users, Clock, Landmark, Activity, ChevronRight, Save, Plus, Upload, ExternalLink, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export const AdminDashboard = () => {
   const [data, setData] = useState(null);
@@ -175,10 +176,10 @@ export const AdminDashboard = () => {
   const handleDirectEvidenceUpload = async (disbursementId, file) => {
     try {
       await api.uploadFile(`/admin/disbursements/${disbursementId}/evidence`, file);
-      alert("Receipt evidence uploaded successfully!");
+      toast.success("Receipt evidence uploaded successfully!");
       fetchDisbursementsData();
     } catch (err) {
-      alert("Failed to upload evidence: " + err.message);
+      toast.error("Failed to upload evidence: " + err.message);
     }
   };
 

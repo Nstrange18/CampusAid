@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, API_URL } from '../api';
 import { UploadCloud, FileText, ArrowLeft, Trash, Check, AlertCircle, ExternalLink } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export const UploadDocs = () => {
   const { id } = useParams();
@@ -52,6 +53,7 @@ export const UploadDocs = () => {
         document_type: documentType
       });
       setSuccess("Document uploaded successfully!");
+      toast.success("Document uploaded successfully!");
       setSelectedFile(null);
       
       // Reset input element
@@ -61,7 +63,9 @@ export const UploadDocs = () => {
       // Refresh data
       await fetchRequest();
     } catch (err) {
-      setError(err.message || "Upload failed. Please verify file type and try again.");
+      const errorMsg = err.message || "Upload failed. Please verify file type and try again.";
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setUploading(false);
     }

@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { FileText, Save, ArrowLeft, Send, Landmark, HelpCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const requestSchema = z.object({
   title: z.string().min(1, "Campaign title is required"),
@@ -83,9 +84,12 @@ export const RequestForm = () => {
       });
 
       // Redirect to upload documents page for this request
+      toast.success("Fundraising request created successfully! Please upload verification documents.");
       navigate(`/student/requests/${response.request_id}/upload`);
     } catch (err) {
-      setError(err.message || "Failed to submit request. Please try again.");
+      const errorMsg = err.message || "Failed to submit request. Please try again.";
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
