@@ -5,20 +5,12 @@ from .. import models, schemas
 
 router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
 
-@router.get("", response_model=list[schemas.FundraisingRequestOut])
+@router.get("", response_model=list[schemas.CampaignPublicOut])
 def get_approved_campaigns(db: Session = Depends(get_db)):
     # Donors/Public can only see approved and active campaigns
     campaigns = db.query(models.FundraisingRequest).filter(
         models.FundraisingRequest.status == "approved"
     ).all()
-    
-    # Hide checklist, documents, and student bank details for public safety
-    for c in campaigns:
-        c.checklist = None
-        c.documents = []
-        c.student_bank_name = None
-        c.student_account_name = None
-        c.student_account_number = None
     return campaigns
 
 @router.get("/{id}")

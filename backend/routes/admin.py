@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
+from ..utils import validate_upload_file
+
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -552,6 +554,9 @@ def upload_disbursement_evidence(
     if not disbursement:
         raise HTTPException(status_code=404, detail="Disbursement record not found")
         
+    # Validate file format and size
+    validate_upload_file(file)
+
     # Save file
     file_ext = os.path.splitext(file.filename)[1]
     unique_filename = f"disburse_{uuid.uuid4()}{file_ext}"

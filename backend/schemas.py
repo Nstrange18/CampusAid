@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
 from datetime import datetime
 
@@ -132,7 +132,7 @@ class VerificationChecklistOut(VerificationChecklistBase):
 class FundraisingRequestCreate(BaseModel):
     title: str
     description: str
-    amount_needed: float
+    amount_needed: float = Field(..., gt=0)
     purpose: str
     reason_for_request: str
     urgency_level: str  # low, medium, high
@@ -183,6 +183,47 @@ class FundraisingRequestOut(BaseModel):
     class Config:
         from_attributes = True
 
+
+class UserPublicOut(BaseModel):
+    full_name: str
+
+    class Config:
+        from_attributes = True
+
+
+class StudentPublicOut(BaseModel):
+    student_id: int
+    department: str
+    faculty: str
+    level: str
+    user: UserPublicOut
+
+    class Config:
+        from_attributes = True
+
+
+class CampaignPublicOut(BaseModel):
+    request_id: int
+    student_id: int
+    title: str
+    description: str
+    amount_needed: float
+    amount_raised: float
+    purpose: str
+    status: str
+    reason_for_request: str
+    urgency_level: str
+    parent_or_guardian_occupation: str
+    previous_support_received: str
+    supporting_statement: str
+    admin_decision_reason: Optional[str] = None
+    date_submitted: datetime
+    student: Optional[StudentPublicOut] = None
+
+    class Config:
+        from_attributes = True
+
+
 # Donation Account schemas
 class DonationAccountCreate(BaseModel):
     bank_name: str
@@ -202,7 +243,7 @@ class DonationAccountOut(DonationAccountCreate):
 # Donation Record schemas
 class DonationRecordCreate(BaseModel):
     request_id: int
-    amount: float
+    amount: float = Field(..., gt=0)
     transaction_reference: str
 
 class DonationRecordOut(BaseModel):
@@ -253,7 +294,7 @@ class DisbursementCreate(BaseModel):
     request_id: int
     recipient_type: str  # school, hostel, hospital, vendor, student_exception
     recipient_name: str
-    amount_disbursed: float
+    amount_disbursed: float = Field(..., gt=0)
     payment_reference: str
     disbursement_notes: Optional[str] = None
 
