@@ -494,6 +494,14 @@ def create_disbursement(
             detail="Cannot disburse funds for requests that are not approved or completed"
         )
         
+    # Ensure disbursement does not exceed total amount raised
+    total_disbursed_so_far = sum([d.amount_disbursed for d in request.disbursements])
+    if total_disbursed_so_far + disbursement_in.amount_disbursed > request.amount_raised:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Disbursement limit exceeded. The campaign raised ₦{request.amount_raised:,.2f}, and ₦{total_disbursed_so_far:,.2f} has already been disbursed. You cannot disburse more than the remaining ₦{(request.amount_raised - total_disbursed_so_far):,.2f}."
+        )
+        
     new_disbursement = models.Disbursement(
         request_id=disbursement_in.request_id,
         admin_id=admin.admin_id,
