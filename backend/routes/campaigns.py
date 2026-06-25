@@ -12,10 +12,13 @@ def get_approved_campaigns(db: Session = Depends(get_db)):
         models.FundraisingRequest.status == "approved"
     ).all()
     
-    # Hide checklist and documents for public safety
+    # Hide checklist, documents, and student bank details for public safety
     for c in campaigns:
         c.checklist = None
         c.documents = []
+        c.student_bank_name = None
+        c.student_account_name = None
+        c.student_account_number = None
     return campaigns
 
 @router.get("/{id}")
@@ -51,9 +54,9 @@ def get_campaign_by_id(id: int, db: Session = Depends(get_db)):
             "purpose": request.purpose,
             "urgency_level": request.urgency_level,
             "status": request.status,
-            "student_bank_name": request.student_bank_name,
-            "student_account_name": request.student_account_name,
-            "student_account_number": request.student_account_number,
+            "student_bank_name": None,
+            "student_account_name": None,
+            "student_account_number": None,
             "parent_or_guardian_occupation": request.parent_or_guardian_occupation,
             "previous_support_received": request.previous_support_received,
             "supporting_statement": request.supporting_statement,

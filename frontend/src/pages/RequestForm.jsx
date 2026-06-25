@@ -1,65 +1,85 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { FileText, Save, ArrowLeft, Send, Landmark, HelpCircle } from 'lucide-react';
+
+const requestSchema = z.object({
+  title: z.string().min(1, "Campaign title is required"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  purpose: z.string().min(1, "Purpose/Category is required"),
+  amountNeeded: z.coerce.number().positive("Amount needed must be a positive number"),
+  urgencyLevel: z.enum(["low", "medium", "high"]),
+  reasonForRequest: z.string().min(1, "Reason for request is required"),
+  parentOccupation: z.string().min(1, "Parent/guardian occupation is required"),
+  previousSupport: z.enum(["yes", "no"]),
+  supportingStatement: z.string().min(1, "Supporting statement is required"),
+  
+  // Optional bank fields: if one is entered, all three must be entered.
+  bankName: z.string().optional().or(z.literal("")),
+  accountName: z.string().optional().or(z.literal("")),
+  accountNumber: z.string().optional().or(z.literal("")),
+}).superRefine((data, ctx) => {
+  const hasBank = (data.bankName && data.bankName.trim() !== "") || 
+                  (data.accountName && data.accountName.trim() !== "") || 
+                  (data.accountNumber && data.accountNumber.trim() !== "");
+  if (hasBank) {
+    if (!data.bankName || data.bankName.trim() === "") {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Bank name is required if entering details", path: ["bankName"] });
+    }
+    if (!data.accountName || data.accountName.trim() === "") {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Account name is required if entering details", path: ["accountName"] });
+    }
+    if (!data.accountNumber || data.accountNumber.trim() === "") {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Account number is required if entering details", path: ["accountNumber"] });
+    } else if (data.accountNumber.length < 10) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Account number must be at least 10 digits", path: ["accountNumber"] });
+    }
+  }
+});
 
 export const RequestForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Form Fields
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [purpose, setPurpose] = useState("Tuition Fees"); // Default category
-  const [amountNeeded, setAmountNeeded] = useState("");
-  const [urgencyLevel, setUrgencyLevel] = useState("medium"); // low, medium, high
-  
-  const [reasonForRequest, setReasonForRequest] = useState("");
-  const [parentOccupation, setParentOccupation] = useState("");
-  const [previousSupport, setPreviousSupport] = useState("no"); // yes/no
-  const [supportingStatement, setSupportingStatement] = useState("");
-
-  const [bankName, setBankName] = useState("");
-  const [accountName, setAccountName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-
-    // Front-end validations
-    if (!title || !description || !amountNeeded || !reasonForRequest || !parentOccupation || !supportingStatement || !bankName || !accountName || !accountNumber) {
-      setError("Please fill in all required fields.");
-      return;
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(requestSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      purpose: "Tuition Fees",
+      amountNeeded: "",
+      urgencyLevel: "medium",
+      reasonForRequest: "",
+      parentOccupation: "",
+      previousSupport: "no",
+      supportingStatement: "",
+      bankName: "",
+      accountName: "",
+      accountNumber: ""
     }
+  });
 
-    const parsedAmount = parseFloat(amountNeeded);
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setError("Please enter a valid fundraising target amount (greater than zero).");
-      return;
-    }
-
-    if (accountNumber.length < 10) {
-      setError("Bank account number should be a valid NUBAN (minimum 10 digits).");
-      return;
-    }
-
+  const onSubmit = async (data) => {
     setLoading(true);
+    setError("");
     try {
       const response = await api.post("/students/requests", {
-        title: title,
-        description: description,
-        purpose: purpose,
-        amount_needed: parsedAmount,
-        reason_for_request: reasonForRequest,
-        urgency_level: urgencyLevel,
-        student_bank_name: bankName,
-        student_account_name: accountName,
-        student_account_number: accountNumber,
-        parent_or_guardian_occupation: parentOccupation,
-        previous_support_received: previousSupport,
-        supporting_statement: supportingStatement
+        title: data.title,
+        description: data.description,
+        purpose: data.purpose,
+        amount_needed: data.amountNeeded,
+        reason_for_request: data.reasonForRequest,
+        urgency_level: data.urgencyLevel,
+        student_bank_name: data.bankName || null,
+        student_account_name: data.accountName || null,
+        student_account_number: data.accountNumber || null,
+        parent_or_guardian_occupation: data.parentOccupation,
+        previous_support_received: data.previousSupport,
+        supporting_statement: data.supportingStatement
       });
 
       // Redirect to upload documents page for this request
@@ -72,67 +92,75 @@ export const RequestForm = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in transition-all duration-300">
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate('/student/dashboard')}
-          className="p-2 hover:bg-slate-100 rounded-xl transition-all border border-slate-200"
+          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all border border-slate-200 dark:border-slate-800"
         >
-          <ArrowLeft className="h-4 w-4 text-slate-600" />
+          <ArrowLeft className="h-4 w-4 text-slate-600 dark:text-slate-300" />
         </button>
         <div>
-          <h3 className="text-lg font-bold text-slate-800">New Fundraising Application</h3>
-          <p className="text-xs text-slate-500">Provide details of your financial need for administrator verification</p>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">New Fundraising Application</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Provide details of your financial need for administrator verification</p>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-800 text-xs font-semibold rounded-2xl">
+        <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 text-red-800 dark:text-red-400 text-xs font-semibold rounded-2xl animate-fade-in">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         
         {/* Section 1: Campaign details */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <FileText className="h-5 w-5 text-blue-600" />
-            <h4 className="font-bold text-slate-800 text-sm">1. Campaign Details</h4>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
+          <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">1. Campaign Details</h4>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-slate-650">Campaign Title</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Campaign Title</label>
               <input
                 type="text"
                 placeholder="e.g. Help John Clear Final Semester CS Fees"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
-                required
+                {...register("title")}
+                className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
+                  errors.title 
+                    ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
+                    : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500 dark:text-slate-100'
+                }`}
               />
+              {errors.title && (
+                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.title.message}</p>
+              )}
             </div>
 
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-slate-655">Detailed Description</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Detailed Description</label>
               <textarea
                 placeholder="Explain the background details of your academic and personal situation. This will be visible to donors if approved."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                {...register("description")}
                 rows={4}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
-                required
+                className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
+                  errors.description 
+                    ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
+                    : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500 dark:text-slate-100'
+                }`}
               />
+              {errors.description && (
+                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.description.message}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-650">Funding Category / Purpose</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Funding Category / Purpose</label>
               <select
-                value={purpose}
-                onChange={(e) => setPurpose(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
-                required
+                {...register("purpose")}
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all dark:text-slate-100"
               >
                 <option>Tuition Fees</option>
                 <option>Books & Materials</option>
@@ -143,12 +171,10 @@ export const RequestForm = () => {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-650">Urgency Level</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Urgency Level</label>
               <select
-                value={urgencyLevel}
-                onChange={(e) => setUrgencyLevel(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
-                required
+                {...register("urgencyLevel")}
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all dark:text-slate-100"
               >
                 <option value="low">Low - General Aid</option>
                 <option value="medium">Medium - Required Within 1 Month</option>
@@ -157,58 +183,71 @@ export const RequestForm = () => {
             </div>
 
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-slate-650">Amount Needed (₦)</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Amount Needed (₦)</label>
               <input
                 type="number"
                 placeholder="e.g. 150000"
-                value={amountNeeded}
-                onChange={(e) => setAmountNeeded(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
-                required
+                {...register("amountNeeded")}
+                className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
+                  errors.amountNeeded 
+                    ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
+                    : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500 dark:text-slate-100'
+                }`}
               />
+              {errors.amountNeeded && (
+                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.amountNeeded.message}</p>
+              )}
             </div>
           </div>
         </div>
 
         {/* Section 2: Need verification */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <HelpCircle className="h-5 w-5 text-blue-600" />
-            <h4 className="font-bold text-slate-800 text-sm">2. Indigent Verification Details</h4>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
+          <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <HelpCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">2. Indigent Verification Details</h4>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-slate-650">Detailed Reason for Request (Private to Admin)</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Detailed Reason for Request (Private to Admin)</label>
               <textarea
                 placeholder="What exactly led to this financial need? Explain clearly so the Administrator can understand your need."
-                value={reasonForRequest}
-                onChange={(e) => setReasonForRequest(e.target.value)}
+                {...register("reasonForRequest")}
                 rows={3}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
-                required
+                className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
+                  errors.reasonForRequest 
+                    ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
+                    : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500 dark:text-slate-100'
+                }`}
               />
+              {errors.reasonForRequest && (
+                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.reasonForRequest.message}</p>
+              )}
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-650">Parent or Guardian's Occupation</label>
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Parent or Guardian's Occupation</label>
               <input
                 type="text"
                 placeholder="e.g. Retired Civil Servant, Trader, Unemployed"
-                value={parentOccupation}
-                onChange={(e) => setParentOccupation(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
-                required
+                {...register("parentOccupation")}
+                className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
+                  errors.parentOccupation 
+                    ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
+                    : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500 dark:text-slate-100'
+                }`}
               />
+              {errors.parentOccupation && (
+                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.parentOccupation.message}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-650">Have you received support/scholarship previously?</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Have you received support/scholarship previously?</label>
               <select
-                value={previousSupport}
-                onChange={(e) => setPreviousSupport(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
-                required
+                {...register("previousSupport")}
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all dark:text-slate-100"
               >
                 <option value="no">No previous support received</option>
                 <option value="yes">Yes, I have received support before</option>
@@ -216,62 +255,82 @@ export const RequestForm = () => {
             </div>
 
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-slate-650">Supporting Statement</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Supporting Statement</label>
               <textarea
                 placeholder="A brief message on how this funding will impact your academic studies."
-                value={supportingStatement}
-                onChange={(e) => setSupportingStatement(e.target.value)}
+                {...register("supportingStatement")}
                 rows={3}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
-                required
+                className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
+                  errors.supportingStatement 
+                    ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
+                    : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500 dark:text-slate-100'
+                }`}
               />
+              {errors.supportingStatement && (
+                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.supportingStatement.message}</p>
+              )}
             </div>
           </div>
         </div>
 
         {/* Section 3: Student bank details */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <Landmark className="h-5 w-5 text-blue-600" />
-            <h4 className="font-bold text-slate-800 text-sm">3. Personal Disbursement Bank Details</h4>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
+          <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <Landmark className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">3. Private Disbursement Details (Optional)</h4>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-650">Bank Name</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Bank Name</label>
               <input
                 type="text"
                 placeholder="e.g. GTBank, Access Bank"
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
-                required
+                {...register("bankName")}
+                className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
+                  errors.bankName 
+                    ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
+                    : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500 dark:text-slate-100'
+                }`}
               />
+              {errors.bankName && (
+                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.bankName.message}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-650">Account Name</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Account Name</label>
               <input
                 type="text"
                 placeholder="e.g. John Doe"
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
-                required
+                {...register("accountName")}
+                className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
+                  errors.accountName 
+                    ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
+                    : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500 dark:text-slate-100'
+                }`}
               />
+              {errors.accountName && (
+                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.accountName.message}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-650">Account Number</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Account Number</label>
               <input
                 type="text"
                 placeholder="e.g. 0123456789 (10 digits)"
-                value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
+                {...register("accountNumber")}
                 maxLength={10}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
-                required
+                className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
+                  errors.accountNumber 
+                    ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
+                    : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500 dark:text-slate-100'
+                }`}
               />
+              {errors.accountNumber && (
+                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.accountNumber.message}</p>
+              )}
             </div>
           </div>
         </div>
@@ -281,14 +340,14 @@ export const RequestForm = () => {
           <button
             type="button"
             onClick={() => navigate('/student/dashboard')}
-            className="px-6 py-3 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-xl text-sm font-bold transition-all"
+            className="px-6 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-sm font-bold transition-all"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-blue-500/10 flex items-center gap-1.5"
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-blue-500/10 flex items-center gap-1.5 transform active:scale-98"
           >
             <Send className="h-4 w-4" />
             {loading ? "Submitting..." : "Submit Application"}

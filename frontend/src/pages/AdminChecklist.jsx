@@ -117,18 +117,18 @@ export const AdminChecklist = () => {
     return (
       <div className="text-center py-12">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mb-2"></div>
-        <p className="text-sm text-slate-500">Loading checklist details...</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Loading checklist details...</p>
       </div>
     );
   }
 
   if (error && !request) {
     return (
-      <div className="bg-red-50 p-6 rounded-2xl border border-red-200 text-center space-y-4 max-w-md mx-auto">
+      <div className="bg-red-50 dark:bg-red-955/20 p-6 rounded-2xl border border-red-200 dark:border-red-900/30 text-center space-y-4 max-w-md mx-auto">
         <AlertCircle className="h-10 w-10 text-red-500 mx-auto" />
-        <h4 className="font-bold text-red-800">Error</h4>
-        <p className="text-xs text-red-700">{error}</p>
-        <button onClick={() => navigate('/admin/requests')} className="px-4 py-2 bg-red-650 text-white rounded-lg text-xs font-bold">
+        <h4 className="font-bold text-red-800 dark:text-red-400">Error</h4>
+        <p className="text-xs text-red-700 dark:text-red-300">{error}</p>
+        <button onClick={() => navigate('/admin/requests')} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors">
           Back to List
         </button>
       </div>
@@ -150,25 +150,25 @@ export const AdminChecklist = () => {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate(`/admin/requests/${id}/review`)}
-          className="p-2 hover:bg-slate-100 rounded-xl transition-all border border-slate-200"
+          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer"
         >
-          <ArrowLeft className="h-4 w-4 text-slate-600" />
+          <ArrowLeft className="h-4 w-4" />
         </button>
         <div>
-          <h3 className="text-lg font-bold text-slate-800">Audit Verification Checklist</h3>
-          <p className="text-xs text-slate-500">Student: <span className="font-semibold text-slate-700">{request?.student?.user?.full_name}</span></p>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Audit Verification Checklist</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Student: <span className="font-semibold text-slate-700 dark:text-slate-300">{request?.student?.user?.full_name}</span></p>
         </div>
       </div>
 
       {success && (
-        <div className="p-4 bg-emerald-50 border border-emerald-250 text-emerald-800 text-xs font-semibold rounded-2xl flex items-center gap-2">
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-955/20 border border-emerald-300 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-xs font-semibold rounded-2xl flex items-center gap-2">
           <CheckCircle className="h-4.5 w-4.5 text-emerald-500" />
           {success}
         </div>
       )}
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-800 text-xs font-semibold rounded-2xl flex items-center gap-2">
+        <div className="p-4 bg-red-50 dark:bg-red-955/20 border border-red-200 dark:border-red-900/30 text-red-800 dark:text-red-400 text-xs font-semibold rounded-2xl flex items-center gap-2">
           <AlertTriangle className="h-4.5 w-4.5 text-red-500 shrink-0 animate-bounce" />
           {error}
         </div>
@@ -177,10 +177,10 @@ export const AdminChecklist = () => {
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Checklist options */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 space-y-4">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <ShieldCheck className="h-5 w-5 text-blue-600" />
-            <h4 className="font-bold text-slate-800 text-sm">Indigent Checklist Items</h4>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm lg:col-span-2 space-y-4 transition-colors duration-300">
+          <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-450" />
+            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Indigent Checklist Items</h4>
           </div>
 
           <div className="space-y-3">
@@ -188,18 +188,20 @@ export const AdminChecklist = () => {
               <div 
                 key={item.id} 
                 className={`p-3.5 border rounded-2xl flex items-start gap-3 transition-colors ${
-                  item.state ? 'bg-blue-50/10 border-blue-200' : 'bg-slate-50/50 border-slate-200/80 hover:border-slate-300'
+                  item.state 
+                    ? 'bg-blue-50/10 dark:bg-blue-900/10 border-blue-200 dark:border-blue-900/40' 
+                    : 'bg-slate-50/50 dark:bg-slate-900/10 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={item.state}
                   onChange={(e) => item.setter(e.target.checked)}
-                  className="h-4 w-4 rounded text-blue-650 border-slate-300 focus:ring-blue-500/20 mt-0.5 cursor-pointer shrink-0"
+                  className="h-4 w-4 rounded text-blue-600 dark:text-blue-500 border-slate-300 dark:border-slate-700 focus:ring-blue-500/20 mt-0.5 cursor-pointer shrink-0"
                 />
                 <div className="space-y-0.5 min-w-0">
-                  <p className="text-xs font-bold text-slate-800">{item.label}</p>
-                  <p className="text-[10px] text-slate-450 leading-relaxed">{item.description}</p>
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-100">{item.label}</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">{item.description}</p>
                 </div>
               </div>
             ))}
@@ -208,20 +210,20 @@ export const AdminChecklist = () => {
 
         {/* Decision & Reason Column */}
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
-            <h4 className="font-bold text-slate-800 text-sm border-b border-slate-100 pb-3">Audit Decision</h4>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5 transition-colors duration-300">
+            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm border-b border-slate-100 dark:border-slate-800 pb-3">Audit Decision</h4>
             
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-650">Verify Action</label>
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Verify Action</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setDecision("approve")}
-                    className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                    className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       decision === 'approve' 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300' 
-                        : 'bg-white border-slate-200 text-slate-500 hover:border-slate-350'
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-900/40' 
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-700'
                     }`}
                   >
                     Approve Request
@@ -229,10 +231,10 @@ export const AdminChecklist = () => {
                   <button
                     type="button"
                     onClick={() => setDecision("reject")}
-                    className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                    className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                       decision === 'reject' 
-                        ? 'bg-red-50 text-red-700 border-red-300' 
-                        : 'bg-white border-slate-200 text-slate-500 hover:border-slate-350'
+                        ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-900/40' 
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-700'
                     }`}
                   >
                     Decline Request
@@ -241,13 +243,13 @@ export const AdminChecklist = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-650">Decision Comment / Notes</label>
+                <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Decision Comment / Notes</label>
                 <textarea
                   placeholder="Provide detailed reasons for approval or rejection. This comment will be visible to the student."
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all font-semibold"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all font-semibold"
                   required
                 />
               </div>
@@ -255,7 +257,7 @@ export const AdminChecklist = () => {
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-455 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Send className="h-4 w-4" />
                 {saving ? "Submitting Decision..." : "Commit Decision"}

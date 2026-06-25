@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { DashboardLayout } from './layouts/DashboardLayout';
 
 // Core pages
@@ -35,10 +36,10 @@ import AdminUsers from './pages/AdminUsers';
 
 // Page loader
 const PageLoader = () => (
-  <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+  <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center transition-colors duration-300">
     <div className="text-center space-y-3">
       <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
-      <p className="text-xs text-slate-500 font-semibold">Initializing CampusAid Secure Portal...</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Initializing CampusAid Secure Portal...</p>
     </div>
   </div>
 );
@@ -71,7 +72,8 @@ const DashboardRoute = ({ children, allowedRoles }) => {
 
 export const App = () => {
   return (
-    <AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
       <BrowserRouter>
         <Routes>
           {/* Public Pages */}
@@ -187,6 +189,7 @@ export const App = () => {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </ThemeProvider>
   );
 };
 export default App;

@@ -1,5 +1,8 @@
+import os
+import uuid
+import shutil
 import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
@@ -462,3 +465,102 @@ def update_donation_account(
         db.commit()
         db.refresh(new_account)
         return new_account
+
+
+# Ensure uploads directory exists
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@router.post("/disbursements", response_model=schemas.DisbursementOut, status_code=status.HTTP_201_CREATED)
+def create_disbursement(
+    disbursement_in: schemas.DisbursementCreate,
+    current_user: models.User = Depends(auth.get_current_admin),
+    db: Session = Depends(get_db)
+):
+    admin = get_admin_record(current_user, db)
+    
+    # Check request
+    request = db.query(models.FundraisingRequest).filter(
+        models.FundraisingRequest.request_id == disbursement_in.request_id
+    ).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Fundraising request not found")
+        
+    if request.status not in ["approved", "completed"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot disburse funds for requests that are not approved or completed"
+        )
+        
+    new_disbursement = models.Disbursement(
+        request_id=disbursement_in.request_id,
+        admin_id=admin.admin_id,
+        recipient_type=disbursement_in.recipient_type,
+        recipient_name=disbursement_in.recipient_name,
+        amount_disbursed=disbursement_in.amount_disbursed,
+        payment_reference=disbursement_in.payment_reference,
+        disbursement_status="disbursed",
+        disbursement_notes=disbursement_in.disbursement_notes
+    )
+    db.add(new_disbursement)
+    
+    # Mark status as completed if not already
+    if request.status != "completed":
+        request.status = "completed"
+        
+    # Notify student
+    student_user_id = request.student.user.user_id
+    student_notif = models.Notification(
+        user_id=student_user_id,
+        title="Disbursement Processed",
+        message=f"A disbursement of ₦{disbursement_in.amount_disbursed:,.2f} has been processed for your request '{request.title}' directly to {disbursement_in.recipient_name} ({disbursement_in.recipient_type.replace('_', ' ').title()}). Ref: {disbursement_in.payment_reference}."
+    )
+    db.add(student_notif)
+    
+    db.commit()
+    db.refresh(new_disbursement)
+    return new_disbursement
+
+@router.get("/disbursements", response_model=list[schemas.DisbursementOut])
+def get_all_disbursements(
+    current_user: models.User = Depends(auth.get_current_admin),
+    db: Session = Depends(get_db)
+):
+    get_admin_record(current_user, db)
+    return db.query(models.Disbursement).order_by(models.Disbursement.disbursed_at.desc()).all()
+
+@router.get("/disbursements/campaign/{request_id}", response_model=list[schemas.DisbursementOut])
+def get_campaign_disbursements(
+    request_id: int,
+    current_user: models.User = Depends(auth.get_current_admin),
+    db: Session = Depends(get_db)
+):
+    get_admin_record(current_user, db)
+    return db.query(models.Disbursement).filter(
+        models.Disbursement.request_id == request_id
+    ).order_by(models.Disbursement.disbursed_at.desc()).all()
+
+@router.post("/disbursements/{id}/evidence", response_model=schemas.DisbursementOut)
+def upload_disbursement_evidence(
+    id: int,
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(auth.get_current_admin),
+    db: Session = Depends(get_db)
+):
+    get_admin_record(current_user, db)
+    disbursement = db.query(models.Disbursement).filter(models.Disbursement.disbursement_id == id).first()
+    if not disbursement:
+        raise HTTPException(status_code=404, detail="Disbursement record not found")
+        
+    # Save file
+    file_ext = os.path.splitext(file.filename)[1]
+    unique_filename = f"disburse_{uuid.uuid4()}{file_ext}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    disbursement.evidence_file = f"/uploads/{unique_filename}"
+    db.commit()
+    db.refresh(disbursement)
+    return disbursement

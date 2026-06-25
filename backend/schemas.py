@@ -136,9 +136,9 @@ class FundraisingRequestCreate(BaseModel):
     purpose: str
     reason_for_request: str
     urgency_level: str  # low, medium, high
-    student_bank_name: str
-    student_account_name: str
-    student_account_number: str
+    student_bank_name: Optional[str] = None
+    student_account_name: Optional[str] = None
+    student_account_number: Optional[str] = None
     parent_or_guardian_occupation: str
     previous_support_received: str  # yes, no
     supporting_statement: str
@@ -168,9 +168,9 @@ class FundraisingRequestOut(BaseModel):
     status: str
     reason_for_request: str
     urgency_level: str
-    student_bank_name: str
-    student_account_name: str
-    student_account_number: str
+    student_bank_name: Optional[str] = None
+    student_account_name: Optional[str] = None
+    student_account_number: Optional[str] = None
     parent_or_guardian_occupation: str
     previous_support_received: str
     supporting_statement: str
@@ -243,6 +243,32 @@ class NotificationOut(BaseModel):
     message: str
     is_read: bool
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# Disbursement schemas
+class DisbursementCreate(BaseModel):
+    request_id: int
+    recipient_type: str  # school, hostel, hospital, vendor, student_exception
+    recipient_name: str
+    amount_disbursed: float
+    payment_reference: str
+    disbursement_notes: Optional[str] = None
+
+class DisbursementOut(BaseModel):
+    disbursement_id: int
+    request_id: int
+    admin_id: Optional[int] = None
+    recipient_type: str
+    recipient_name: str
+    amount_disbursed: float
+    payment_reference: str
+    evidence_file: Optional[str] = None
+    disbursement_status: str
+    disbursement_notes: Optional[str] = None
+    disbursed_at: datetime
 
     class Config:
         from_attributes = True
