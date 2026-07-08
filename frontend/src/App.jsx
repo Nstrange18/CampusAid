@@ -12,6 +12,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 // Student pages
 import StudentDashboard from './pages/StudentDashboard';
@@ -189,8 +190,8 @@ export const App = () => {
             </DashboardRoute>
           } />
 
-          {/* Catch-all Redirect */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Catch-all */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
