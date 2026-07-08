@@ -1,4 +1,8 @@
-const API_URL = "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || (
+  import.meta.env.DEV
+    ? "http://localhost:8000"
+    : "https://campusaid-backend-bey9.onrender.com"
+);
 
 async function request(path, options = {}) {
   const token = localStorage.getItem("campusaid_token");
