@@ -81,9 +81,9 @@ export const DashboardLayout = ({ children }) => {
   );
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col lg:flex-row transition-colors duration-300">
+    <div className="h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col lg:flex-row overflow-hidden transition-colors duration-300">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:w-64 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex-col border-r border-slate-200/80 dark:border-slate-900 shadow-xl transition-all duration-300">
+      <aside className="hidden lg:flex lg:w-64 lg:h-screen lg:shrink-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex-col border-r border-slate-200/80 dark:border-slate-900 shadow-xl transition-all duration-300">
         <div className="p-6 flex items-center gap-3 bg-white dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-900">
           <div className="p-2 bg-blue-600 rounded-lg text-white">
             <GraduationCap className="h-6 w-6" />
@@ -222,7 +222,7 @@ export const DashboardLayout = ({ children }) => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Top Header */}
         <header className="hidden lg:flex items-center justify-between px-8 py-4 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 shadow-sm transition-colors duration-300">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 capitalize">{getPageTitle()}</h2>

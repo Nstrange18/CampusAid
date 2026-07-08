@@ -20,7 +20,7 @@ const adminInviteSchema = z.object({
 
 export const AdminInviteRegisterPage = () => {
   const { token } = useParams();
-  const { registerViaInvite, user } = useAuth();
+  const { registerViaInvite, user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [error, setError] = useState("");
@@ -41,15 +41,6 @@ export const AdminInviteRegisterPage = () => {
       position: ""
     }
   });
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      if (user.role === 'admin') navigate('/admin/dashboard');
-      else if (user.role === 'student') navigate('/student/dashboard');
-      else if (user.role === 'donor') navigate('/donor/dashboard');
-    }
-  }, [user]);
 
   // Validate the invite token on mount
   useEffect(() => {
@@ -95,6 +86,11 @@ export const AdminInviteRegisterPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSwitchAccount = () => {
+    logout();
+    toast.info("You have been logged out. Complete the invite form with the new admin account details.");
   };
 
   // Loading state while validating token
@@ -197,6 +193,21 @@ export const AdminInviteRegisterPage = () => {
             Verified invite link — complete the form below to create your administrator account.
           </p>
         </div>
+
+        {user && (
+          <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded-xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-blue-700 dark:text-blue-300 font-semibold">
+              You are currently signed in as {user.full_name}. Log out first if this invite is for a different admin account.
+            </p>
+            <button
+              type="button"
+              onClick={handleSwitchAccount}
+              className="shrink-0 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors"
+            >
+              Log out here
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 text-xs font-semibold rounded-xl text-center animate-fade-in transition-colors duration-300">
