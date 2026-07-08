@@ -58,6 +58,7 @@ class Administrator(Base):
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
     staff_id = Column(String, unique=True, index=True, nullable=False)
     position = Column(String, nullable=False)
+    is_super_admin = Column(Boolean, default=False)
 
     # Relationships
     user = relationship("User", back_populates="admin")
@@ -66,6 +67,7 @@ class Administrator(Base):
     reports = relationship("Report", back_populates="admin")
     verified_donations = relationship("DonationRecord", back_populates="verifier")
     disbursements = relationship("Disbursement", back_populates="admin")
+    invite_tokens = relationship("AdminInviteToken", back_populates="created_by_admin")
 
 
 class FundraisingRequest(Base):
@@ -213,3 +215,19 @@ class Disbursement(Base):
     # Relationships
     request = relationship("FundraisingRequest", back_populates="disbursements")
     admin = relationship("Administrator", back_populates="disbursements")
+
+
+class AdminInviteToken(Base):
+    __tablename__ = "admin_invite_tokens"
+
+    token_id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, unique=True, index=True, nullable=False)
+    created_by_admin_id = Column(Integer, ForeignKey("administrators.admin_id"), nullable=False)
+    is_used = Column(Boolean, default=False)
+    used_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    # Relationships
+    created_by_admin = relationship("Administrator", back_populates="invite_tokens")
+    used_by_user = relationship("User")

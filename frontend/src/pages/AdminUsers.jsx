@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import { Users, Search, Calendar, Shield, User, Heart } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Users, Search, Calendar, Shield, User, Heart, LinkIcon, Copy, Check, Clock, XCircle, CheckCircle2, Plus } from 'lucide-react';
 
 export const AdminUsers = () => {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [inviteLinks, setInviteLinks] = useState([]);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [generatingLink, setGeneratingLink] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const isSuperAdmin = currentUser?.is_super_admin === true;
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -21,6 +30,69 @@ export const AdminUsers = () => {
     };
     fetchUsers();
   }, []);
+
+  // Fetch invite links for super admins
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    const fetchInvites = async () => {
+      setInviteLoading(true);
+      try {
+        const data = await api.getInviteLinks();
+        setInviteLinks(data);
+      } catch (err) {
+        console.error("Failed to load invite links:", err);
+      } finally {
+        setInviteLoading(false);
+      }
+    };
+    fetchInvites();
+  }, [isSuperAdmin]);
+
+  const handleGenerateLink = async () => {
+    setGeneratingLink(true);
+    setGeneratedLink("");
+    setCopied(false);
+    try {
+      const invite = await api.generateInviteLink();
+      const link = `${window.location.origin}/admin/invite/${invite.token}`;
+      setGeneratedLink(link);
+      // Refresh invite list
+      const data = await api.getInviteLinks();
+      setInviteLinks(data);
+    } catch (err) {
+      console.error("Failed to generate invite link:", err);
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = generatedLink;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
+
+  const getInviteStatus = (invite) => {
+    if (invite.is_used) {
+      return { label: "Used", color: "text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800", icon: CheckCircle2 };
+    }
+    if (new Date(invite.expires_at) < new Date()) {
+      return { label: "Expired", color: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40", icon: XCircle };
+    }
+    return { label: "Active", color: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40", icon: Clock };
+  };
 
   const getRoleBadge = (role) => {
     switch (role) {
@@ -169,22 +241,22 @@ export const AdminUsers = () => {
                   
                   {u.role === 'student' && (
                     <div className="p-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl space-y-0.5 mt-2 text-[10px]">
-                      <p><span className="font-bold text-slate-500 dark:text-slate-400 font-bold">Matric:</span> {u.details.matric_number}</p>
-                      <p><span className="font-bold text-slate-500 dark:text-slate-400 font-bold">Dept:</span> {u.details.department} • {u.details.level}</p>
+                      <p><span className="font-bold text-slate-500 dark:text-slate-400">Matric:</span> {u.details.matric_number}</p>
+                      <p><span className="font-bold text-slate-500 dark:text-slate-400">Dept:</span> {u.details.department} • {u.details.level}</p>
                     </div>
                   )}
 
                   {u.role === 'donor' && (
                     <div className="p-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl space-y-0.5 mt-2 text-[10px]">
-                      <p><span className="font-bold text-slate-500 dark:text-slate-400 font-bold">Type:</span> <span className="capitalize">{u.details.donor_type}</span></p>
-                      {u.details.organization_name && <p><span className="font-bold text-slate-500 dark:text-slate-400 font-bold">Org:</span> {u.details.organization_name}</p>}
+                      <p><span className="font-bold text-slate-500 dark:text-slate-400">Type:</span> <span className="capitalize">{u.details.donor_type}</span></p>
+                      {u.details.organization_name && <p><span className="font-bold text-slate-500 dark:text-slate-400">Org:</span> {u.details.organization_name}</p>}
                     </div>
                   )}
 
                   {u.role === 'admin' && (
                     <div className="p-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl space-y-0.5 mt-2 text-[10px]">
-                      <p><span className="font-bold text-slate-500 dark:text-slate-400 font-bold">Staff ID:</span> {u.details.staff_id}</p>
-                      <p><span className="font-bold text-slate-500 dark:text-slate-400 font-bold">Pos:</span> {u.details.position}</p>
+                      <p><span className="font-bold text-slate-500 dark:text-slate-400">Staff ID:</span> {u.details.staff_id}</p>
+                      <p><span className="font-bold text-slate-500 dark:text-slate-400">Pos:</span> {u.details.position}</p>
                     </div>
                   )}
                 </div>
@@ -196,6 +268,122 @@ export const AdminUsers = () => {
             ))}
           </div>
         </>
+      )}
+
+      {/* Super Admin: Invite Management Section */}
+      {isSuperAdmin && (
+        <div className="space-y-4 pt-6 mt-6 border-t-2 border-dashed border-slate-200 dark:border-slate-800">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Shield className="h-5 w-5 text-emerald-500" />
+                Admin Invite Management
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Generate one-time invite links for new administrators</p>
+            </div>
+            <button
+              onClick={handleGenerateLink}
+              disabled={generatingLink}
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-500/10 transform active:scale-95"
+            >
+              {generatingLink ? (
+                <>
+                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-3.5 w-3.5" />
+                  Generate Invite Link
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Generated link display */}
+          {generatedLink && (
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 rounded-xl p-4 space-y-3 animate-fade-in">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                <LinkIcon className="h-4 w-4" />
+                Invite Link Generated Successfully
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={generatedLink}
+                  className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs text-slate-700 dark:text-slate-300 font-mono"
+                />
+                <button
+                  onClick={handleCopyLink}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                    copied 
+                      ? 'bg-emerald-600 text-white' 
+                      : 'bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                  }`}
+                >
+                  {copied ? <><Check className="h-3.5 w-3.5" /> Copied!</> : <><Copy className="h-3.5 w-3.5" /> Copy</>}
+                </button>
+              </div>
+              <p className="text-[10px] text-emerald-600 dark:text-emerald-500">
+                This link is valid for 48 hours and can only be used once. Share it securely with the intended administrator.
+              </p>
+            </div>
+          )}
+
+          {/* Invite links history table */}
+          {inviteLoading ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-6 w-6 border-4 border-emerald-500 border-t-transparent mb-2"></div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Loading invite history...</p>
+            </div>
+          ) : inviteLinks.length > 0 ? (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden transition-colors duration-300">
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
+                      <th className="p-4">Token</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4">Created</th>
+                      <th className="p-4">Expires</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-300">
+                    {inviteLinks.map((inv) => {
+                      const status = getInviteStatus(inv);
+                      const StatusIcon = status.icon;
+                      return (
+                        <tr key={inv.token_id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                          <td className="p-4 font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                            {inv.token.substring(0, 8)}...{inv.token.substring(inv.token.length - 4)}
+                          </td>
+                          <td className="p-4">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-[9px] font-bold border rounded uppercase ${status.color}`}>
+                              <StatusIcon className="h-2.5 w-2.5" />
+                              {status.label}
+                            </span>
+                          </td>
+                          <td className="p-4 text-slate-500 dark:text-slate-400">
+                            {new Date(inv.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="p-4 text-slate-500 dark:text-slate-400">
+                            {new Date(inv.expires_at).toLocaleDateString()} {new Date(inv.expires_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 text-center rounded-2xl space-y-2 transition-colors duration-300">
+              <LinkIcon className="h-8 w-8 text-slate-400 dark:text-slate-600 mx-auto" />
+              <p className="text-xs text-slate-500 dark:text-slate-400">No invite links generated yet.</p>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

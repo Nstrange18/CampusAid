@@ -572,3 +572,41 @@ def upload_disbursement_evidence(
     db.commit()
     db.refresh(disbursement)
     return disbursement
+
+
+# ──────────────────────────────────────────────────
+# Super Admin: Invite Link Management
+# ──────────────────────────────────────────────────
+
+@router.post("/invite-links", response_model=schemas.AdminInviteTokenOut, status_code=status.HTTP_201_CREATED)
+def generate_invite_link(
+    current_user: models.User = Depends(auth.get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Super admin generates a one-time invite link for new admin registration."""
+    admin = get_admin_record(current_user, db)
+
+    token_value = str(uuid.uuid4())
+    expires_at = datetime.datetime.utcnow() + datetime.timedelta(hours=48)
+
+    invite_token = models.AdminInviteToken(
+        token=token_value,
+        created_by_admin_id=admin.admin_id,
+        is_used=False,
+        expires_at=expires_at
+    )
+    db.add(invite_token)
+    db.commit()
+    db.refresh(invite_token)
+    return invite_token
+
+
+@router.get("/invite-links", response_model=list[schemas.AdminInviteTokenOut])
+def list_invite_links(
+    current_user: models.User = Depends(auth.get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    """Super admin lists all invite tokens with their status."""
+    get_admin_record(current_user, db)
+    return db.query(models.AdminInviteToken).order_by(models.AdminInviteToken.created_at.desc()).all()
+

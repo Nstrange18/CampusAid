@@ -74,6 +74,22 @@ export const AuthProvider = ({ children }) => {
     setError(null);
   };
 
+  const registerViaInvite = async (inviteData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Register via invite
+      await api.registerViaInvite(inviteData);
+      // Login immediately with the new credentials
+      const profile = await login(inviteData.email, inviteData.password);
+      return profile;
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || "Admin registration failed");
+      throw err;
+    }
+  };
+
   const refreshUser = async () => {
     const token = localStorage.getItem("campusaid_token");
     if (token) {
@@ -82,7 +98,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, error, login, register, registerViaInvite, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
