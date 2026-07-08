@@ -319,7 +319,7 @@ class DisbursementOut(BaseModel):
 class AdminInviteTokenOut(BaseModel):
     token_id: int
     token: str
-    created_by_admin_id: int
+    created_by_admin_id: Optional[int] = None
     is_used: bool
     used_by_user_id: Optional[int] = None
     expires_at: datetime

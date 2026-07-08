@@ -222,7 +222,7 @@ class AdminInviteToken(Base):
 
     token_id = Column(Integer, primary_key=True, index=True)
     token = Column(String, unique=True, index=True, nullable=False)
-    created_by_admin_id = Column(Integer, ForeignKey("administrators.admin_id"), nullable=False)
+    created_by_admin_id = Column(Integer, ForeignKey("administrators.admin_id"), nullable=True)
     is_used = Column(Boolean, default=False)
     used_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
     expires_at = Column(DateTime, nullable=False)

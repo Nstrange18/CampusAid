@@ -58,6 +58,7 @@ export const AdminUsers = () => {
       const invite = await api.generateInviteLink();
       const link = `${FRONTEND_URL}/admin/invite/${invite.token}`;
       setGeneratedLink(link);
+      setInviteLinks((current) => [invite, ...current.filter((item) => item.token_id !== invite.token_id)]);
       // Refresh invite list
       const data = await api.getInviteLinks();
       setInviteLinks(data);
