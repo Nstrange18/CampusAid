@@ -3,6 +3,8 @@ import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { Users, Search, Calendar, Shield, User, Heart, LinkIcon, Copy, Check, Clock, XCircle, CheckCircle2, Plus } from 'lucide-react';
 
+const FRONTEND_URL = (import.meta.env.VITE_FRONTEND_URL || window.location.origin).replace(/\/$/, "");
+
 export const AdminUsers = () => {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
@@ -54,7 +56,7 @@ export const AdminUsers = () => {
     setCopied(false);
     try {
       const invite = await api.generateInviteLink();
-      const link = `${window.location.origin}/admin/invite/${invite.token}`;
+      const link = `${FRONTEND_URL}/admin/invite/${invite.token}`;
       setGeneratedLink(link);
       // Refresh invite list
       const data = await api.getInviteLinks();
