@@ -235,7 +235,7 @@ export const AdminUsers = () => {
                   {getRoleBadge(u.role)}
                 </div>
 
-                <div className="h-[1px] bg-slate-100 dark:bg-slate-800" />
+                <div className="h-px bg-slate-100 dark:bg-slate-800" />
 
                 <div className="space-y-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                   <p><span className="text-slate-400 dark:text-slate-500">Email:</span> {u.email}</p>
