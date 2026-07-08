@@ -5,15 +5,152 @@ import { useTheme } from '../context/ThemeContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { GraduationCap, User, Phone, Mail, Lock, BookOpen, Layers, Landmark, Briefcase, FileText, Sun, Moon } from 'lucide-react';
+import { GraduationCap, User, Phone, Mail, Lock, BookOpen, Layers, Landmark, Sun, Moon, ChevronDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 
+// ── Faculty → Departments mapping ──────────────────────────────────────────────
+const FACULTY_DEPARTMENTS = {
+  "Faculty of Agriculture": [
+    "Agricultural Economics",
+    "Agricultural Extension",
+    "Animal Science",
+    "Soil Science",
+    "Nutrition & Dietetics",
+    "Home Science & Management",
+    "Food Science and Technology",
+    "Crop Science",
+  ],
+  "Faculty of Health Sciences": [
+    "Department of Health Sciences",
+  ],
+  "Faculty of Law": [
+    "International & Comparative Law",
+    "Commercial & Corporate Law",
+    "Customary & Indigenous Law",
+    "Jurisprudence & Legal Theory",
+    "Property Law",
+    "Public Law",
+    "Private Law",
+  ],
+  "Faculty of Arts": [
+    "History & International Studies",
+    "Mass Communication",
+    "Archaeology & Tourism",
+    "English & Literary Studies",
+    "Fine & Applied Arts",
+    "Linguistics, Igbo & other Nigerian Languages",
+    "Music",
+    "Theatre & Film Studies",
+    "Foreign Language & Literature",
+  ],
+  "Faculty of Biomedical Sciences": [
+    "Department of Biomedical Sciences",
+  ],
+  "Faculty of Medical Sciences": [
+    "Department of Medical Sciences",
+  ],
+  "Faculty of Biological Sciences": [
+    "Biochemistry",
+    "Microbiology",
+    "Plant Science & Biotechnology",
+    "Genetics & Biotechnology",
+    "Zoology & Environmental Biology",
+  ],
+  "Faculty of Pharmaceutical Sciences": [
+    "Pharmaceutical & Medicinal Chemistry",
+    "Pharmacology & Toxicology",
+    "Pharmaceutics",
+    "Pharmaceutical Technology & Industrial Pharmacy",
+    "Pharmacognosy & Environmental Medicines",
+    "Clinical Pharmacy & Pharmacy Management",
+    "Pharmaceutical Microbiology & Biotechnology",
+  ],
+  "Faculty of Business Administration": [
+    "Accountancy",
+    "Marketing",
+    "Banking & Finance",
+    "Management",
+  ],
+  "Faculty of Social Sciences": [
+    "Public Administration & Local Government",
+    "Economics",
+    "Political Science",
+    "Social Work",
+    "Religion & Cultural Studies",
+    "Psychology",
+    "Philosophy",
+    "Geography",
+    "Sociology & Anthropology",
+  ],
+  "Faculty of Dentistry": [
+    "Department of Dentistry",
+  ],
+  "Faculty of Physical Sciences": [
+    "Pure & Industrial Chemistry",
+    "Computer Science",
+    "Geology",
+    "Mathematics",
+    "Physics & Astronomy",
+    "Science Laboratory Technology",
+    "Statistics",
+  ],
+  "Faculty of Education": [
+    "Adult Education",
+    "Arts Education",
+    "Computer Education",
+    "Educational Foundations",
+    "Library Science",
+    "Human Kinetics & Health Education",
+    "Science Education",
+    "Social Science",
+  ],
+  "Faculty of Veterinary Medicine": [
+    "Veterinary Pathology & Microbiology",
+    "Veterinary Obstetrics & Reproductive Diseases",
+    "Veterinary Physiology & Pharmacology",
+    "Veterinary Anatomy",
+    "Veterinary Medicine",
+    "Veterinary Animal Health & Production",
+    "Veterinary Parasitology & Entomology",
+    "Veterinary Public Health & Preventive Medicine",
+    "Veterinary Surgery",
+    "Veterinary Teaching Hospital",
+  ],
+  "Faculty of Engineering": [
+    "Agric. & Bioresources Engineering",
+    "Civil Engineering",
+    "Electrical Engineering",
+    "Electronic Engineering",
+    "Mechanical Engineering",
+    "Metallurgical & Materials Engineering",
+    "Mechatronic Engineering",
+    "BioMedical Engineering",
+  ],
+  "Faculty of Vocational Technical Education": [
+    "Agricultural Education",
+    "Business Education",
+    "Computer Education",
+    "Industrial Technical Education",
+    "Home Economics & Hospitality Management Education",
+    "Computer and Robotics",
+  ],
+  "Faculty of Environmental Studies": [
+    "Estate Management",
+    "Architecture",
+    "Urban & Regional Planning",
+    "Geoinformatics & Surveying",
+  ],
+};
+
+const FACULTY_NAMES = Object.keys(FACULTY_DEPARTMENTS);
+
+// ── Validation schema ──────────────────────────────────────────────────────────
 const registerSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
   email: z.string().min(1, "Email is required").email("Invalid email address"),
   phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["student", "donor", "admin"]),
+  role: z.enum(["student", "donor"]),
   
   // Student specific
   matricNumber: z.string().optional(),
@@ -26,9 +163,7 @@ const registerSchema = z.object({
   organizationName: z.string().optional(),
   address: z.string().optional(),
   
-  // Admin specific
-  staffId: z.string().optional(),
-  position: z.string().optional(),
+  // Admin specific fields removed — admin registration is invite-only
 }).superRefine((data, ctx) => {
   if (data.role === 'student') {
     if (!data.matricNumber || data.matricNumber.trim() === "") {
@@ -45,15 +180,6 @@ const registerSchema = z.object({
   if (data.role === 'donor') {
     if (data.donorType === 'corporate' && (!data.organizationName || data.organizationName.trim() === "")) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Organization name is required for corporate donors", path: ["organizationName"] });
-    }
-  }
-  
-  if (data.role === 'admin') {
-    if (!data.staffId || data.staffId.trim() === "") {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Staff ID is required", path: ["staffId"] });
-    }
-    if (!data.position || data.position.trim() === "") {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Position is required", path: ["position"] });
     }
   }
 });
@@ -79,14 +205,16 @@ export const RegisterPage = () => {
       level: "100 Level",
       donorType: "individual",
       organizationName: "",
-      address: "",
-      staffId: "",
-      position: ""
+      address: ""
     }
   });
 
   const watchedRole = watch("role");
   const watchedDonorType = watch("donorType");
+  const watchedFaculty = watch("faculty");
+
+  // Derive available departments from the selected faculty
+  const availableDepartments = watchedFaculty ? (FACULTY_DEPARTMENTS[watchedFaculty] || []) : [];
 
   React.useEffect(() => {
     if (user) {
@@ -95,6 +223,13 @@ export const RegisterPage = () => {
       else if (user.role === 'admin') navigate('/admin/dashboard');
     }
   }, [user]);
+
+  // Reset department when faculty changes
+  const handleFacultyChange = (e) => {
+    const newFaculty = e.target.value;
+    setValue("faculty", newFaculty, { shouldValidate: true });
+    setValue("department", "", { shouldValidate: false });
+  };
 
   const onSubmit = async (data) => {
     setError("");
@@ -117,9 +252,6 @@ export const RegisterPage = () => {
       if (data.donorType === "corporate") {
         payload.organization_name = data.organizationName;
       }
-    } else if (data.role === "admin") {
-      payload.staff_id = data.staffId;
-      payload.position = data.position;
     }
 
     setLoading(true);
@@ -134,6 +266,14 @@ export const RegisterPage = () => {
       setLoading(false);
     }
   };
+
+  // Shared select styling helper
+  const selectClassName = (hasError) =>
+    `w-full pl-10 pr-10 py-2.5 bg-white dark:bg-slate-900 border rounded-xl text-sm focus:ring-2 focus:outline-none appearance-none transition-all ${
+      hasError
+        ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500'
+        : 'border-slate-300 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500'
+    } dark:text-slate-100`;
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 flex items-center justify-center p-4 md:py-12 transition-colors duration-300 relative">
@@ -168,11 +308,10 @@ export const RegisterPage = () => {
           {/* Role Selection */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-600 dark:text-slate-400 transition-colors duration-300">Select Profile Role</label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { id: 'student', label: 'Student' },
-                { id: 'donor', label: 'Donor' },
-                { id: 'admin', label: 'Admin' }
+                { id: 'donor', label: 'Donor' }
               ].map((item) => (
                 <button
                   type="button"
@@ -316,44 +455,54 @@ export const RegisterPage = () => {
                   )}
                 </div>
 
+                {/* ── Faculty dropdown ── */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Faculty</label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                       <Landmark className="h-4 w-4" />
                     </span>
-                    <input
-                      type="text"
-                      placeholder="Faculty of Science"
+                    <select
                       {...register("faculty")}
-                      className={`w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-950/40 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
-                        errors.faculty 
-                          ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
-                          : 'border-slate-300 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500'
-                      }`}
-                    />
+                      onChange={handleFacultyChange}
+                      className={selectClassName(errors.faculty)}
+                    >
+                      <option value="">— Select Faculty —</option>
+                      {FACULTY_NAMES.map((fac) => (
+                        <option key={fac} value={fac}>{fac}</option>
+                      ))}
+                    </select>
+                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                      <ChevronDown className="h-4 w-4" />
+                    </span>
                   </div>
                   {errors.faculty && (
                     <p className="text-[10px] text-red-500 font-bold mt-1 animate-fade-in">{errors.faculty.message}</p>
                   )}
                 </div>
 
+                {/* ── Department dropdown (filtered by faculty) ── */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Department</label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                       <BookOpen className="h-4 w-4" />
                     </span>
-                    <input
-                      type="text"
-                      placeholder="Computer Science"
+                    <select
                       {...register("department")}
-                      className={`w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-950/40 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
-                        errors.department 
-                          ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
-                          : 'border-slate-300 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500'
-                      }`}
-                    />
+                      disabled={!watchedFaculty}
+                      className={`${selectClassName(errors.department)} ${!watchedFaculty ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <option value="">
+                        {watchedFaculty ? "— Select Department —" : "— Choose a faculty first —"}
+                      </option>
+                      {availableDepartments.map((dept) => (
+                        <option key={dept} value={dept}>{dept}</option>
+                      ))}
+                    </select>
+                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                      <ChevronDown className="h-4 w-4" />
+                    </span>
                   </div>
                   {errors.department && (
                     <p className="text-[10px] text-red-500 font-bold mt-1 animate-fade-in">{errors.department.message}</p>
@@ -434,60 +583,6 @@ export const RegisterPage = () => {
             </div>
           )}
 
-          {/* Section: Admin Specific Info */}
-          {watchedRole === 'admin' && (
-            <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800 transition-colors duration-300 animate-slide-down">
-              <h3 className="text-xs font-extrabold text-blue-700 dark:text-blue-400 uppercase tracking-widest">Administrator Credentials</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Staff ID</label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <FileText className="h-4 w-4" />
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="STF/2026/001"
-                      {...register("staffId")}
-                      className={`w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-950/40 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
-                        errors.staffId 
-                          ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
-                          : 'border-slate-300 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500'
-                      }`}
-                    />
-                  </div>
-                  {errors.staffId && (
-                    <p className="text-[10px] text-red-500 font-bold mt-1 animate-fade-in">{errors.staffId.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Position</label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <Briefcase className="h-4 w-4" />
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="e.g. Dean of Students"
-                      {...register("position")}
-                      className={`w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-950/40 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
-                        errors.position 
-                          ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
-                          : 'border-slate-300 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500'
-                      }`}
-                    />
-                  </div>
-                  {errors.position && (
-                    <p className="text-[10px] text-red-500 font-bold mt-1 animate-fade-in">{errors.position.message}</p>
-                  )}
-                </div>
-
-              </div>
-            </div>
-          )}
-
           <button
             type="submit"
             disabled={loading}
@@ -521,3 +616,4 @@ export const RegisterPage = () => {
   );
 };
 export default RegisterPage;
+

@@ -19,7 +19,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    role: str  # student, donor, admin
+    role: str  # student, donor (admin registration is invite-only)
     
     # Optional fields for student, donor, admin registration details
     # Student specific
@@ -313,3 +313,27 @@ class DisbursementOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Admin invite token schemas
+class AdminInviteTokenOut(BaseModel):
+    token_id: int
+    token: str
+    created_by_admin_id: int
+    is_used: bool
+    used_by_user_id: Optional[int] = None
+    expires_at: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AdminRegisterViaInvite(BaseModel):
+    token: str
+    full_name: str
+    email: EmailStr
+    phone_number: str
+    password: str
+    staff_id: str
+    position: str

@@ -38,7 +38,8 @@ def seed_db():
     admin_profile = models.Administrator(
         user_id=admin_user.user_id,
         staff_id="STF/2026/001",
-        position="Dean of Student Affairs"
+        position="Dean of Student Affairs",
+        is_super_admin=True
     )
     db.add(admin_profile)
     db.commit()

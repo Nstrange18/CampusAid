@@ -81,7 +81,13 @@ export const api = {
       method: "POST",
       body: formData,
     });
-  }
+  },
+
+  // Admin invite token helpers
+  validateInviteToken: (token) => request(`/auth/validate-invite/${token}`, { method: "GET" }),
+  registerViaInvite: (data) => request("/auth/register/admin-invite", { method: "POST", body: data }),
+  generateInviteLink: () => request("/admin/invite-links", { method: "POST" }),
+  getInviteLinks: () => request("/admin/invite-links", { method: "GET" }),
 };
 export default api;
 export { API_URL };

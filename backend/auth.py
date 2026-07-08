@@ -76,3 +76,12 @@ def get_current_admin(current_user: models.User = Depends(get_current_user)) -> 
             detail="Access forbidden: Administrators only"
         )
     return current_user
+
+def get_current_super_admin(current_user: models.User = Depends(get_current_admin), db: Session = Depends(get_db)) -> models.User:
+    admin = db.query(models.Administrator).filter(models.Administrator.user_id == current_user.user_id).first()
+    if not admin or not admin.is_super_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access forbidden: Super Administrators only"
+        )
+    return current_user

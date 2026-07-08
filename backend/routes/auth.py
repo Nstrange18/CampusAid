@@ -1,3 +1,5 @@
+import uuid
+import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -15,6 +17,13 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
+        )
+
+    # Block admin self-registration — admins must use invite links
+    if user_in.role == "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin registration is invite-only. Please use an invite link from a super administrator."
         )
 
     # Hash the password
@@ -162,5 +171,81 @@ def get_me(current_user: models.User = Depends(auth.get_current_user), db: Sessi
             res["admin_id"] = admin.admin_id
             res["staff_id"] = admin.staff_id
             res["position"] = admin.position
+            res["is_super_admin"] = admin.is_super_admin
             
     return res
+
+
+@router.get("/validate-invite/{token}")
+def validate_invite_token(token: str, db: Session = Depends(get_db)):
+    """Check if an admin invite token is valid (exists, unused, not expired)."""
+    invite = db.query(models.AdminInviteToken).filter(models.AdminInviteToken.token == token).first()
+    if not invite:
+        return {"valid": False, "reason": "Invite link not found"}
+    if invite.is_used:
+        return {"valid": False, "reason": "This invite link has already been used"}
+    if invite.expires_at < datetime.datetime.utcnow():
+        return {"valid": False, "reason": "This invite link has expired"}
+    return {"valid": True, "expires_at": invite.expires_at}
+
+
+@router.post("/register/admin-invite", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED)
+def register_admin_via_invite(data: schemas.AdminRegisterViaInvite, db: Session = Depends(get_db)):
+    """Register a new admin using a one-time invite token."""
+    # Validate token
+    invite = db.query(models.AdminInviteToken).filter(models.AdminInviteToken.token == data.token).first()
+    if not invite:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid invite token")
+    if invite.is_used:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This invite link has already been used")
+    if invite.expires_at < datetime.datetime.utcnow():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This invite link has expired")
+
+    # Check email uniqueness
+    existing_user = db.query(models.User).filter(models.User.email == data.email).first()
+    if existing_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+
+    # Check staff_id uniqueness
+    existing_staff = db.query(models.Administrator).filter(models.Administrator.staff_id == data.staff_id).first()
+    if existing_staff:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Staff ID already registered")
+
+    # Create the user
+    hashed_password = auth.get_password_hash(data.password)
+    new_user = models.User(
+        full_name=data.full_name,
+        email=data.email,
+        phone_number=data.phone_number,
+        password_hash=hashed_password,
+        role="admin"
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    # Create admin record
+    try:
+        new_admin = models.Administrator(
+            user_id=new_user.user_id,
+            staff_id=data.staff_id,
+            position=data.position,
+            is_super_admin=False
+        )
+        db.add(new_admin)
+
+        # Mark token as used
+        invite.is_used = True
+        invite.used_by_user_id = new_user.user_id
+
+        db.commit()
+        db.refresh(new_user)
+    except Exception as e:
+        db.delete(new_user)
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating admin account: {str(e)}"
+        )
+
+    return new_user

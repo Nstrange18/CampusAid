@@ -35,6 +35,7 @@ import AdminCampaigns from './pages/AdminCampaigns';
 import AdminDonations from './pages/AdminDonations';
 import AdminReports from './pages/AdminReports';
 import AdminUsers from './pages/AdminUsers';
+import AdminInviteRegisterPage from './pages/AdminInviteRegisterPage';
 
 // Page loader
 const PageLoader = () => (
@@ -83,6 +84,7 @@ export const App = () => {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/admin/invite/:token" element={<AdminInviteRegisterPage />} />
 
           {/* Protected General Pages (Admin, Student & Donor can view) */}
           <Route path="/profile" element={
