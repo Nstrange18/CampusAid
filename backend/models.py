@@ -19,6 +19,7 @@ class User(Base):
     donor = relationship("Donor", back_populates="user", uselist=False, cascade="all, delete-orphan")
     admin = relationship("Administrator", back_populates="user", uselist=False, cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
 
 
 class Student(Base):
@@ -231,3 +232,16 @@ class AdminInviteToken(Base):
     # Relationships
     created_by_admin = relationship("Administrator", back_populates="invite_tokens")
     used_by_user = relationship("User")
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    token_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    token_hash = Column(String, unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    revoked_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="refresh_tokens")

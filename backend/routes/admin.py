@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
-from ..utils import validate_upload_file
+from ..utils import validate_upload_file, rate_limit_upload
 from ..cloudinary_helper import upload_to_cloudinary
 
 
@@ -551,7 +551,7 @@ def get_campaign_disbursements(
         models.Disbursement.request_id == request_id
     ).order_by(models.Disbursement.disbursed_at.desc()).all()
 
-@router.post("/disbursements/{id}/evidence", response_model=schemas.DisbursementOut)
+@router.post("/disbursements/{id}/evidence", response_model=schemas.DisbursementOut, dependencies=[Depends(rate_limit_upload)])
 def upload_disbursement_evidence(
     id: int,
     file: UploadFile = File(...),

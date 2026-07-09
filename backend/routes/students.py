@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
-from ..utils import validate_upload_file
+from ..utils import validate_upload_file, rate_limit_upload
 from ..cloudinary_helper import upload_to_cloudinary
 
 
@@ -118,7 +118,7 @@ def get_student_request_by_id(id: int, current_user: models.User = Depends(auth.
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fundraising request not found or not owned by you")
     return request
 
-@router.post("/requests/{id}/documents", response_model=schemas.VerificationDocumentOut)
+@router.post("/requests/{id}/documents", response_model=schemas.VerificationDocumentOut, dependencies=[Depends(rate_limit_upload)])
 def upload_request_document(
     id: int,
     document_type: str = Form(...),

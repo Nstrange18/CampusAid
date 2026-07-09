@@ -2,21 +2,33 @@ import os
 import time
 from fastapi import UploadFile, HTTPException, Request, status
 
-# In-memory store for rate limiting (IP -> list of timestamps)
+# In-memory store for rate limiting (scope:IP -> list of timestamps)
 auth_rate_limits = {}
 
-def rate_limit_auth(request: Request):
+def _rate_limit(request: Request, scope: str, max_attempts: int, window_seconds: int):
     ip = request.client.host if request.client else "unknown"
+    key = f"{scope}:{ip}"
     now = time.time()
-    # 10 attempts max per 60 seconds
-    attempts = [t for t in auth_rate_limits.get(ip, []) if now - t < 60]
-    if len(attempts) >= 10:
+    attempts = [t for t in auth_rate_limits.get(key, []) if now - t < window_seconds]
+    if len(attempts) >= max_attempts:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too many authentication requests. Please try again in 60 seconds."
+            detail=f"Too many requests. Please try again in {window_seconds} seconds."
         )
     attempts.append(now)
-    auth_rate_limits[ip] = attempts
+    auth_rate_limits[key] = attempts
+
+def rate_limit_auth(request: Request):
+    _rate_limit(request, "auth", max_attempts=10, window_seconds=60)
+
+def rate_limit_login(request: Request):
+    _rate_limit(request, "login", max_attempts=5, window_seconds=60)
+
+def rate_limit_invite(request: Request):
+    _rate_limit(request, "invite", max_attempts=20, window_seconds=60)
+
+def rate_limit_upload(request: Request):
+    _rate_limit(request, "upload", max_attempts=20, window_seconds=60)
 
 def validate_upload_file(file: UploadFile):
     filename = file.filename or ""

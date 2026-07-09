@@ -4,8 +4,45 @@ const API_URL = import.meta.env.VITE_API_URL || (
     : "https://campusaid-backend-bey9.onrender.com"
 );
 
+const ACCESS_TOKEN_KEY = "campusaid_token";
+const REFRESH_TOKEN_KEY = "campusaid_refresh_token";
+
+const clearStoredTokens = () => {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+};
+
+const storeTokenPair = (tokens) => {
+  localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token);
+  if (tokens.refresh_token) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token);
+  }
+};
+
+const refreshAccessToken = async () => {
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+  if (!refreshToken) {
+    throw new Error("No refresh token available");
+  }
+
+  const response = await fetch(`${API_URL}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+
+  if (!response.ok) {
+    clearStoredTokens();
+    throw new Error("Session expired. Please log in again.");
+  }
+
+  const tokens = await response.json();
+  storeTokenPair(tokens);
+  return tokens.access_token;
+};
+
 async function request(path, options = {}) {
-  const token = localStorage.getItem("campusaid_token");
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
   const headers = {
     ...options.headers,
   };
@@ -21,11 +58,27 @@ async function request(path, options = {}) {
     body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  let response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers,
     body,
   });
+
+  if (response.status === 401 && !options.skipAuthRefresh) {
+    try {
+      const newToken = await refreshAccessToken();
+      response = await fetch(`${API_URL}${path}`, {
+        ...options,
+        headers: {
+          ...headers,
+          Authorization: `Bearer ${newToken}`,
+        },
+        body,
+      });
+    } catch (err) {
+      throw err;
+    }
+  }
 
   if (!response.ok) {
     let errorDetail = "An error occurred";
@@ -66,7 +119,25 @@ export const api = {
       } catch (e) {}
       throw new Error(errorDetail);
     }
-    return response.json();
+    const tokens = await response.json();
+    storeTokenPair(tokens);
+    return tokens;
+  },
+
+  logout: async () => {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    clearStoredTokens();
+    if (!refreshToken) return;
+
+    try {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+    } catch (e) {
+      // Local logout should still succeed even if the network request fails.
+    }
   },
   
   // Generic upload handler (multipart/form-data)

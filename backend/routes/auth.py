@@ -5,9 +5,27 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
-from ..utils import rate_limit_auth
+from ..utils import rate_limit_auth, rate_limit_login, rate_limit_invite
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+def issue_token_pair(user: models.User, db: Session) -> dict:
+    access_token = auth.create_access_token(
+        data={"sub": user.email, "role": user.role}
+    )
+    refresh_token = auth.create_refresh_token()
+    refresh_record = models.RefreshToken(
+        user_id=user.user_id,
+        token_hash=auth.get_refresh_token_hash(refresh_token),
+        expires_at=auth.get_refresh_token_expiry()
+    )
+    db.add(refresh_record)
+    db.commit()
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
 
 @router.post("/register", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED, dependencies=[Depends(rate_limit_auth)])
 def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -120,7 +138,7 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
 
     return new_user
 
-@router.post("/login", response_model=schemas.Token, dependencies=[Depends(rate_limit_auth)])
+@router.post("/login", response_model=schemas.Token, dependencies=[Depends(rate_limit_login)])
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
     if not user or not auth.verify_password(form_data.password, user.password_hash):
@@ -130,10 +148,51 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token = auth.create_access_token(
-        data={"sub": user.email, "role": user.role}
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return issue_token_pair(user, db)
+
+@router.post("/refresh", response_model=schemas.Token, dependencies=[Depends(rate_limit_auth)])
+def refresh_token(data: schemas.RefreshTokenRequest, db: Session = Depends(get_db)):
+    token_hash = auth.get_refresh_token_hash(data.refresh_token)
+    token_record = db.query(models.RefreshToken).filter(
+        models.RefreshToken.token_hash == token_hash
+    ).first()
+
+    if (
+        not token_record
+        or token_record.revoked_at is not None
+        or token_record.expires_at < datetime.datetime.utcnow()
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token"
+        )
+
+    user = db.query(models.User).filter(models.User.user_id == token_record.user_id).first()
+    if not user:
+        token_record.revoked_at = datetime.datetime.utcnow()
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token"
+        )
+
+    token_record.revoked_at = datetime.datetime.utcnow()
+    db.commit()
+    return issue_token_pair(user, db)
+
+@router.post("/logout")
+def logout(data: schemas.RefreshTokenRequest, db: Session = Depends(get_db)):
+    token_hash = auth.get_refresh_token_hash(data.refresh_token)
+    token_record = db.query(models.RefreshToken).filter(
+        models.RefreshToken.token_hash == token_hash,
+        models.RefreshToken.revoked_at.is_(None)
+    ).first()
+
+    if token_record:
+        token_record.revoked_at = datetime.datetime.utcnow()
+        db.commit()
+
+    return {"message": "Logged out"}
 
 @router.get("/me")
 def get_me(current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(get_db)):
@@ -176,7 +235,7 @@ def get_me(current_user: models.User = Depends(auth.get_current_user), db: Sessi
     return res
 
 
-@router.get("/validate-invite/{token}")
+@router.get("/validate-invite/{token}", dependencies=[Depends(rate_limit_invite)])
 def validate_invite_token(token: str, db: Session = Depends(get_db)):
     """Check if an admin invite token is valid (exists, unused, not expired)."""
     invite = db.query(models.AdminInviteToken).filter(models.AdminInviteToken.token == token).first()
@@ -189,7 +248,7 @@ def validate_invite_token(token: str, db: Session = Depends(get_db)):
     return {"valid": True, "expires_at": invite.expires_at}
 
 
-@router.post("/register/admin-invite", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED)
+@router.post("/register/admin-invite", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED, dependencies=[Depends(rate_limit_invite)])
 def register_admin_via_invite(data: schemas.AdminRegisterViaInvite, db: Session = Depends(get_db)):
     """Register a new admin using a one-time invite token."""
     # Validate token

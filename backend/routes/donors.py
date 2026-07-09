@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
-from ..utils import validate_upload_file
+from ..utils import validate_upload_file, rate_limit_upload
 from ..cloudinary_helper import upload_to_cloudinary
 
 
@@ -55,7 +55,7 @@ def create_donation(donation_in: schemas.DonationRecordCreate, current_user: mod
     db.refresh(new_donation)
     return new_donation
 
-@router.post("/donations/{id}/proof", response_model=schemas.DonationRecordOut)
+@router.post("/donations/{id}/proof", response_model=schemas.DonationRecordOut, dependencies=[Depends(rate_limit_upload)])
 def upload_donation_proof(
     id: int,
     file: UploadFile = File(...),

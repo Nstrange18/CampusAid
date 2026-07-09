@@ -69,7 +69,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    api.logout();
     localStorage.removeItem("campusaid_token");
+    localStorage.removeItem("campusaid_refresh_token");
     setUser(null);
     setError(null);
   };
