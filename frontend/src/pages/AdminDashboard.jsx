@@ -4,6 +4,7 @@ import { api, API_URL } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { CheckSquare, DollarSign, HeartHandshake, Users, Clock, Landmark, Activity, ChevronRight, Save, Plus, Upload, ExternalLink, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { confirmToast } from '../utils/toastActions';
 
 export const AdminDashboard = () => {
   const { user } = useAuth();
@@ -134,9 +135,13 @@ export const AdminDashboard = () => {
     // Double check that we don't disburse more than target (warning/guard)
     const targetCampaign = allCampaigns.find(c => c.request_id === parseInt(selectedCampaignId));
     if (targetCampaign && amt > targetCampaign.amount_raised) {
-      if (!window.confirm(`Warning: The disbursement amount (₦${amt.toLocaleString()}) exceeds the funds raised (₦${targetCampaign.amount_raised.toLocaleString()}) for this campaign. Proceed?`)) {
-        return;
-      }
+      const confirmed = await confirmToast({
+        title: "Disbursement exceeds raised amount",
+        message: `The disbursement amount (${amt.toLocaleString()}) exceeds the funds raised (${targetCampaign.amount_raised.toLocaleString()}) for this campaign. Proceed?`,
+        confirmLabel: "Proceed",
+        confirmClassName: "bg-orange-600 hover:bg-orange-700 text-white",
+      });
+      if (!confirmed) return;
     }
 
     setSubmittingDisbursement(true);
@@ -715,3 +720,4 @@ export const AdminDashboard = () => {
   );
 };
 export default AdminDashboard;
+

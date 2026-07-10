@@ -66,7 +66,7 @@ async function request(path, options = {}) {
       body,
     });
   } catch (err) {
-    throw new Error("Backend unavailable. Please check the server URL, CORS settings, or your network connection.");
+    throw new Error("Data unavailable. Please check your network connection and refresh the page");
   }
 
   if (response.status === 401 && !options.skipAuthRefresh) {
@@ -82,7 +82,7 @@ async function request(path, options = {}) {
           body,
         });
       } catch (err) {
-        throw new Error("Backend unavailable. Please check the server URL, CORS settings, or your network connection.");
+        throw new Error("Data unavailable. Please check your network connection and refresh the page");
       }
     } catch (err) {
       throw err;
@@ -122,7 +122,7 @@ export const api = {
         body: formData,
       });
     } catch (err) {
-      throw new Error("Backend unavailable. Please check the server URL, CORS settings, or your network connection.");
+      throw new Error("Data unavailable. Please check your network connection and refresh the page");
     }
     
     if (!response.ok) {

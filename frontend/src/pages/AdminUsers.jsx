@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { Users, Search, Calendar, Shield, User, Heart, LinkIcon, Copy, Check, Clock, XCircle, CheckCircle2, Plus, Ban, RotateCcw, Trash2, ShieldCheck, ShieldX, Activity, RefreshCw } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { confirmToast, promptToast } from '../utils/toastActions';
 
 const FRONTEND_URL = (import.meta.env.VITE_FRONTEND_URL || window.location.origin).replace(/\/$/, "");
 
@@ -104,63 +106,110 @@ export const AdminUsers = () => {
       await action();
       await fetchUsers();
       await fetchActivityLogs();
+      toast.success("Action completed successfully.");
     } catch (err) {
       setError(err.message || "Action failed");
+      toast.error(err.message || "Action failed");
     } finally {
       setActionLoading("");
     }
   };
 
-  const handleSuspendUser = (target) => {
-    const reason = window.prompt(`Why are you suspending ${target.full_name}?`);
+  const handleSuspendUser = async (target) => {
+    const reason = await promptToast({
+      title: `Suspend ${target.full_name}?`,
+      message: "Add a short reason for the suspension. This helps future admins understand the decision.",
+      placeholder: "e.g. Suspicious donation activity",
+      confirmLabel: "Suspend",
+    });
     if (reason === null) return;
     runUserAction(`suspend-${target.user_id}`, () => api.suspendUser(target.user_id, reason || "Suspended by super admin"));
   };
 
-  const handleReactivateUser = (target) => {
-    if (!window.confirm(`Reactivate ${target.full_name}?`)) return;
+  const handleReactivateUser = async (target) => {
+    const confirmed = await confirmToast({
+      title: `Reactivate ${target.full_name}?`,
+      message: "This account will be able to log in again.",
+      confirmLabel: "Reactivate",
+      confirmClassName: "bg-emerald-600 hover:bg-emerald-700 text-white",
+    });
+    if (!confirmed) return;
     runUserAction(`reactivate-${target.user_id}`, () => api.reactivateUser(target.user_id, "Reactivated by super admin"));
   };
 
-  const handlePromoteUser = (target) => {
-    if (!window.confirm(`Promote ${target.full_name} to super admin?`)) return;
+  const handlePromoteUser = async (target) => {
+    const confirmed = await confirmToast({
+      title: `Promote ${target.full_name}?`,
+      message: "This admin will gain superadmin permissions, including account controls and invite management.",
+      confirmLabel: "Promote",
+      confirmClassName: "bg-indigo-600 hover:bg-indigo-700 text-white",
+    });
+    if (!confirmed) return;
     runUserAction(`promote-${target.user_id}`, () => api.promoteSuperAdmin(target.user_id));
   };
 
-  const handleDemoteUser = (target) => {
-    if (!window.confirm(`Demote ${target.full_name} to normal admin?`)) return;
+  const handleDemoteUser = async (target) => {
+    const confirmed = await confirmToast({
+      title: `Demote ${target.full_name}?`,
+      message: "This account will keep normal admin access but lose superadmin permissions.",
+      confirmLabel: "Demote",
+      confirmClassName: "bg-slate-700 hover:bg-slate-800 text-white",
+    });
+    if (!confirmed) return;
     runUserAction(`demote-${target.user_id}`, () => api.demoteSuperAdmin(target.user_id));
   };
 
-  const handleDeleteUser = (target) => {
-    if (!window.confirm(`Delete ${target.full_name}? This only works for accounts with no history. Use suspend for accounts with activity.`)) return;
+  const handleDeleteUser = async (target) => {
+    const confirmed = await confirmToast({
+      title: `Delete ${target.full_name}?`,
+      message: "This only works for accounts with no history. For accounts with activity, suspend them instead.",
+      confirmLabel: "Delete",
+      confirmClassName: "bg-red-600 hover:bg-red-700 text-white",
+    });
+    if (!confirmed) return;
     runUserAction(`delete-${target.user_id}`, () => api.deleteUser(target.user_id));
   };
 
   const handleRevokeInvite = async (invite) => {
-    if (!window.confirm("Revoke this invite link? It will stop working immediately.")) return;
+    const confirmed = await confirmToast({
+      title: "Revoke invite link?",
+      message: "This invite link will stop working immediately.",
+      confirmLabel: "Revoke",
+      confirmClassName: "bg-red-600 hover:bg-red-700 text-white",
+    });
+    if (!confirmed) return;
     setError("");
     setActionLoading(`revoke-${invite.token_id}`);
     try {
       await api.revokeInviteLink(invite.token_id);
       await fetchInvites();
       await fetchActivityLogs();
+      toast.success("Invite link revoked.");
     } catch (err) {
       setError(err.message || "Failed to revoke invite");
+      toast.error(err.message || "Failed to revoke invite");
     } finally {
       setActionLoading("");
     }
   };
 
   const handleCleanupTokens = async () => {
-    if (!window.confirm("Delete expired and revoked refresh tokens?")) return;
+    const confirmed = await confirmToast({
+      title: "Clean expired sessions?",
+      message: "Expired and revoked refresh tokens will be deleted from the database.",
+      confirmLabel: "Clean",
+      confirmClassName: "bg-blue-600 hover:bg-blue-700 text-white",
+    });
+    if (!confirmed) return;
     setError("");
     setActionLoading("cleanup-tokens");
     try {
       await api.cleanupRefreshTokens();
       await fetchActivityLogs();
+      toast.success("Expired sessions cleaned up.");
     } catch (err) {
       setError(err.message || "Failed to clean up refresh tokens");
+      toast.error(err.message || "Failed to clean up refresh tokens");
     } finally {
       setActionLoading("");
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api, API_URL } from '../api';
 import { DollarSign, Clock, Check, X, ExternalLink, Calendar, MessageSquare, AlertCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { confirmToast } from '../utils/toastActions';
 
 export const AdminDonations = () => {
   const [donations, setDonations] = useState([]);
@@ -28,7 +29,13 @@ export const AdminDonations = () => {
   }, []);
 
   const handleVerify = async (id) => {
-    if (!window.confirm("Are you sure you want to verify this payment receipt? The donation amount will be instantly credited to the campaign progress.")) return;
+    const confirmed = await confirmToast({
+      title: "Verify donation receipt?",
+      message: "The donation amount will be instantly credited to the campaign progress.",
+      confirmLabel: "Verify",
+      confirmClassName: "bg-emerald-600 hover:bg-emerald-700 text-white",
+    });
+    if (!confirmed) return;
     
     try {
       await api.put(`/admin/donations/${id}/verify`);
