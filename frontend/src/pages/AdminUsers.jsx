@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
-import { Users, Search, Calendar, Shield, User, Heart, LinkIcon, Copy, Check, Clock, XCircle, CheckCircle2, Plus } from 'lucide-react';
+import { Users, Search, Calendar, Shield, User, Heart, LinkIcon, Copy, Check, Clock, XCircle, CheckCircle2, Plus, Ban, RotateCcw, Trash2, ShieldCheck, ShieldX, Activity, RefreshCw } from 'lucide-react';
 
 const FRONTEND_URL = (import.meta.env.VITE_FRONTEND_URL || window.location.origin).replace(/\/$/, "");
 
@@ -16,38 +16,65 @@ export const AdminUsers = () => {
   const [generatingLink, setGeneratingLink] = useState(false);
   const [generatedLink, setGeneratedLink] = useState("");
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState("");
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
 
   const isSuperAdmin = currentUser?.is_super_admin === true;
 
+  const fetchUsers = async () => {
+    try {
+      const data = await api.get("/admin/users");
+      setUsers(data);
+    } catch (err) {
+      setError(err.message || "Failed to load users");
+      console.error("Failed to load users:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchInvites = async () => {
+    if (!isSuperAdmin) return;
+    setInviteLoading(true);
+    try {
+      const data = await api.getInviteLinks();
+      setInviteLinks(data);
+    } catch (err) {
+      setError(err.message || "Failed to load invite links");
+      console.error("Failed to load invite links:", err);
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const fetchActivityLogs = async () => {
+    if (!isSuperAdmin) return;
+    setLogsLoading(true);
+    try {
+      const data = await api.getActivityLogs();
+      setActivityLogs(data);
+    } catch (err) {
+      const message = err.message === "Not Found"
+        ? "Admin activity logs are not available from the backend yet. Restart or redeploy the backend after these changes."
+        : err.message || "Failed to load activity logs";
+      setError(message);
+      console.error("Failed to load activity logs:", err);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const data = await api.get("/admin/users");
-        setUsers(data);
-      } catch (err) {
-        console.error("Failed to load users:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchUsers();
   }, []);
 
   // Fetch invite links for super admins
   useEffect(() => {
     if (!isSuperAdmin) return;
-    const fetchInvites = async () => {
-      setInviteLoading(true);
-      try {
-        const data = await api.getInviteLinks();
-        setInviteLinks(data);
-      } catch (err) {
-        console.error("Failed to load invite links:", err);
-      } finally {
-        setInviteLoading(false);
-      }
-    };
     fetchInvites();
+    fetchActivityLogs();
   }, [isSuperAdmin]);
 
   const handleGenerateLink = async () => {
@@ -60,12 +87,82 @@ export const AdminUsers = () => {
       setGeneratedLink(link);
       setInviteLinks((current) => [invite, ...current.filter((item) => item.token_id !== invite.token_id)]);
       // Refresh invite list
-      const data = await api.getInviteLinks();
-      setInviteLinks(data);
+      await fetchInvites();
+      await fetchActivityLogs();
     } catch (err) {
+      setError(err.message || "Failed to generate invite link");
       console.error("Failed to generate invite link:", err);
     } finally {
       setGeneratingLink(false);
+    }
+  };
+
+  const runUserAction = async (label, action) => {
+    setError("");
+    setActionLoading(label);
+    try {
+      await action();
+      await fetchUsers();
+      await fetchActivityLogs();
+    } catch (err) {
+      setError(err.message || "Action failed");
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleSuspendUser = (target) => {
+    const reason = window.prompt(`Why are you suspending ${target.full_name}?`);
+    if (reason === null) return;
+    runUserAction(`suspend-${target.user_id}`, () => api.suspendUser(target.user_id, reason || "Suspended by super admin"));
+  };
+
+  const handleReactivateUser = (target) => {
+    if (!window.confirm(`Reactivate ${target.full_name}?`)) return;
+    runUserAction(`reactivate-${target.user_id}`, () => api.reactivateUser(target.user_id, "Reactivated by super admin"));
+  };
+
+  const handlePromoteUser = (target) => {
+    if (!window.confirm(`Promote ${target.full_name} to super admin?`)) return;
+    runUserAction(`promote-${target.user_id}`, () => api.promoteSuperAdmin(target.user_id));
+  };
+
+  const handleDemoteUser = (target) => {
+    if (!window.confirm(`Demote ${target.full_name} to normal admin?`)) return;
+    runUserAction(`demote-${target.user_id}`, () => api.demoteSuperAdmin(target.user_id));
+  };
+
+  const handleDeleteUser = (target) => {
+    if (!window.confirm(`Delete ${target.full_name}? This only works for accounts with no history. Use suspend for accounts with activity.`)) return;
+    runUserAction(`delete-${target.user_id}`, () => api.deleteUser(target.user_id));
+  };
+
+  const handleRevokeInvite = async (invite) => {
+    if (!window.confirm("Revoke this invite link? It will stop working immediately.")) return;
+    setError("");
+    setActionLoading(`revoke-${invite.token_id}`);
+    try {
+      await api.revokeInviteLink(invite.token_id);
+      await fetchInvites();
+      await fetchActivityLogs();
+    } catch (err) {
+      setError(err.message || "Failed to revoke invite");
+    } finally {
+      setActionLoading("");
+    }
+  };
+
+  const handleCleanupTokens = async () => {
+    if (!window.confirm("Delete expired and revoked refresh tokens?")) return;
+    setError("");
+    setActionLoading("cleanup-tokens");
+    try {
+      await api.cleanupRefreshTokens();
+      await fetchActivityLogs();
+    } catch (err) {
+      setError(err.message || "Failed to clean up refresh tokens");
+    } finally {
+      setActionLoading("");
     }
   };
 
@@ -91,10 +188,60 @@ export const AdminUsers = () => {
     if (invite.is_used) {
       return { label: "Used", color: "text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800", icon: CheckCircle2 };
     }
+    if (invite.revoked_at) {
+      return { label: "Revoked", color: "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900/40", icon: XCircle };
+    }
     if (new Date(invite.expires_at) < new Date()) {
       return { label: "Expired", color: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/40", icon: XCircle };
     }
     return { label: "Active", color: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40", icon: Clock };
+  };
+
+  const getAccountStatusBadge = (user) => {
+    const suspended = user.account_status === "suspended";
+    return (
+      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-[9px] font-bold border rounded uppercase ${
+        suspended
+          ? "bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/40"
+          : "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/40"
+      }`}>
+        {suspended ? <Ban className="h-2.5 w-2.5" /> : <CheckCircle2 className="h-2.5 w-2.5" />}
+        {suspended ? "Suspended" : "Active"}
+      </span>
+    );
+  };
+
+  const renderUserActions = (target) => {
+    if (!isSuperAdmin || target.user_id === currentUser?.user_id) return null;
+    const suspended = target.account_status === "suspended";
+    const isAdmin = target.role === "admin";
+    const targetIsSuperAdmin = target.is_super_admin || target.details?.is_super_admin;
+    return (
+      <div className="flex flex-wrap items-center gap-1.5">
+        {suspended ? (
+          <button onClick={() => handleReactivateUser(target)} disabled={actionLoading === `reactivate-${target.user_id}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border border-emerald-200 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
+            <RotateCcw className="h-3 w-3" /> Reactivate
+          </button>
+        ) : (
+          <button onClick={() => handleSuspendUser(target)} disabled={actionLoading === `suspend-${target.user_id}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border border-orange-200 dark:border-orange-900/40 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20">
+            <Ban className="h-3 w-3" /> Suspend
+          </button>
+        )}
+        {isAdmin && !targetIsSuperAdmin && (
+          <button onClick={() => handlePromoteUser(target)} disabled={actionLoading === `promote-${target.user_id}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border border-indigo-200 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20">
+            <ShieldCheck className="h-3 w-3" /> Promote
+          </button>
+        )}
+        {isAdmin && targetIsSuperAdmin && (
+          <button onClick={() => handleDemoteUser(target)} disabled={actionLoading === `demote-${target.user_id}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40">
+            <ShieldX className="h-3 w-3" /> Demote
+          </button>
+        )}
+        <button onClick={() => handleDeleteUser(target)} disabled={actionLoading === `delete-${target.user_id}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20">
+          <Trash2 className="h-3 w-3" /> Delete
+        </button>
+      </div>
+    );
   };
 
   const getRoleBadge = (role) => {
@@ -123,6 +270,12 @@ export const AdminUsers = () => {
         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">User Directory</h3>
         <p className="text-xs text-slate-500 dark:text-slate-400">Manage registered students, contributors, and academic administrators</p>
       </div>
+
+      {error && (
+        <div className="p-3 bg-red-50 dark:bg-red-950/20 text-red-800 dark:text-red-400 text-xs font-semibold border border-red-200 dark:border-red-900/40 rounded-xl">
+          {error}
+        </div>
+      )}
 
       {/* Filter toolbar */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center gap-3 transition-colors duration-300">
@@ -179,9 +332,11 @@ export const AdminUsers = () => {
                   <tr className="bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
                     <th className="p-4 rounded-l-2xl">User details</th>
                     <th className="p-4">Role</th>
+                    <th className="p-4">Status</th>
                     <th className="p-4">Contact</th>
                     <th className="p-4">Profile credentials</th>
-                    <th className="p-4 rounded-r-2xl">Registered</th>
+                    <th className="p-4">Registered</th>
+                    {isSuperAdmin && <th className="p-4 rounded-r-2xl">Actions</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-300">
@@ -191,6 +346,7 @@ export const AdminUsers = () => {
                         <span className="font-bold text-slate-800 dark:text-slate-100">{u.full_name}</span>
                       </td>
                       <td className="p-4">{getRoleBadge(u.role)}</td>
+                      <td className="p-4">{getAccountStatusBadge(u)}</td>
                       <td className="p-4">
                         <div className="space-y-0.5">
                           <span>{u.email}</span>
@@ -220,6 +376,11 @@ export const AdminUsers = () => {
                       <td className="p-4 text-slate-500 dark:text-slate-400">
                         {new Date(u.created_at).toLocaleDateString()}
                       </td>
+                      {isSuperAdmin && (
+                        <td className="p-4 min-w-56">
+                          {renderUserActions(u)}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -233,7 +394,10 @@ export const AdminUsers = () => {
               <div key={u.user_id} className="bg-white dark:bg-slate-900 p-5 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4 transition-colors duration-300">
                 <div className="flex items-start justify-between gap-3">
                   <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs">{u.full_name}</h4>
-                  {getRoleBadge(u.role)}
+                  <div className="flex flex-col items-end gap-1">
+                    {getRoleBadge(u.role)}
+                    {getAccountStatusBadge(u)}
+                  </div>
                 </div>
 
                 <div className="h-px bg-slate-100 dark:bg-slate-800" />
@@ -267,6 +431,8 @@ export const AdminUsers = () => {
                 <div className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800">
                   <Calendar className="h-3.5 w-3.5" /> Registered: {new Date(u.created_at).toLocaleDateString()}
                 </div>
+
+                {isSuperAdmin && renderUserActions(u)}
               </div>
             ))}
           </div>
@@ -350,6 +516,7 @@ export const AdminUsers = () => {
                       <th className="p-4">Status</th>
                       <th className="p-4">Created</th>
                       <th className="p-4">Expires</th>
+                      <th className="p-4">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-300">
@@ -373,6 +540,20 @@ export const AdminUsers = () => {
                           <td className="p-4 text-slate-500 dark:text-slate-400">
                             {new Date(inv.expires_at).toLocaleDateString()} {new Date(inv.expires_at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
                           </td>
+                          <td className="p-4">
+                            {!inv.is_used && !inv.revoked_at && new Date(inv.expires_at) >= new Date() ? (
+                              <button
+                                onClick={() => handleRevokeInvite(inv)}
+                                disabled={actionLoading === `revoke-${inv.token_id}`}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
+                              >
+                                <XCircle className="h-3 w-3" />
+                                Revoke
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500">No action</span>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
@@ -386,6 +567,56 @@ export const AdminUsers = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400">No invite links generated yet.</p>
             </div>
           )}
+
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden transition-colors duration-300">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-blue-500" />
+                  Admin Activity Logs
+                </h3>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">Recent sensitive actions by administrators</p>
+              </div>
+              <button
+                onClick={handleCleanupTokens}
+                disabled={actionLoading === "cleanup-tokens"}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Clean Expired Sessions
+              </button>
+            </div>
+            {logsLoading ? (
+              <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">Loading activity logs...</div>
+            ) : activityLogs.length > 0 ? (
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-800">
+                      <th className="p-4">Action</th>
+                      <th className="p-4">Target</th>
+                      <th className="p-4">Details</th>
+                      <th className="p-4">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium text-slate-700 dark:text-slate-300">
+                    {activityLogs.map((log) => (
+                      <tr key={log.log_id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                        <td className="p-4 font-bold text-slate-800 dark:text-slate-100">{log.action.replaceAll("_", " ")}</td>
+                        <td className="p-4 text-slate-500 dark:text-slate-400">
+                          {log.target_type || "system"} {log.target_id ? `#${log.target_id}` : ""}
+                        </td>
+                        <td className="p-4 text-slate-500 dark:text-slate-400 max-w-sm truncate">{log.details || "-"}</td>
+                        <td className="p-4 text-slate-500 dark:text-slate-400">{new Date(log.created_at).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400">No admin activity logged yet.</div>
+            )}
+          </div>
         </div>
       )}
     </div>

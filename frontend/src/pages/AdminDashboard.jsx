@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api, API_URL } from '../api';
+import { useAuth } from '../context/AuthContext';
 import { CheckSquare, DollarSign, HeartHandshake, Users, Clock, Landmark, Activity, ChevronRight, Save, Plus, Upload, ExternalLink, FileText, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 export const AdminDashboard = () => {
+  const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview"); // overview, disbursements
@@ -35,6 +37,7 @@ export const AdminDashboard = () => {
   const [submittingDisbursement, setSubmittingDisbursement] = useState(false);
   const [disburseError, setDisburseError] = useState("");
   const [disburseSuccess, setDisburseSuccess] = useState("");
+  const isSuperAdmin = user?.is_super_admin === true;
 
   const fetchDashboard = async () => {
     try {
@@ -90,6 +93,12 @@ export const AdminDashboard = () => {
     setSavingAccount(true);
     setSuccessMsg("");
     setErrorMsg("");
+
+    if (!isSuperAdmin) {
+      setErrorMsg("Only super admins can update the trust account settings.");
+      setSavingAccount(false);
+      return;
+    }
 
     try {
       await api.put("/admin/donation-account", {
@@ -333,6 +342,12 @@ export const AdminDashboard = () => {
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Define account details visible to donors</p>
             </div>
 
+            {!isSuperAdmin && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-400 text-[10px] font-semibold border border-amber-200 dark:border-amber-900/40 rounded-xl">
+                Only super admins can edit these payment details. Normal admins can view them for reference.
+              </div>
+            )}
+
             {successMsg && (
               <div className="p-3 bg-emerald-50 dark:bg-emerald-955/20 text-emerald-800 dark:text-emerald-400 text-[10px] font-semibold border border-emerald-300 dark:border-emerald-900/30 rounded-xl">
                 {successMsg}
@@ -351,6 +366,8 @@ export const AdminDashboard = () => {
                   type="text"
                   placeholder="e.g. Campus Trust Bank"
                   value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  disabled={!isSuperAdmin}
                   className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all font-medium"
                   required
                 />
@@ -363,6 +380,7 @@ export const AdminDashboard = () => {
                   placeholder="e.g. CampusAid Welfare Fund"
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
+                  disabled={!isSuperAdmin}
                   className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all font-medium"
                   required
                 />
@@ -375,6 +393,7 @@ export const AdminDashboard = () => {
                   placeholder="e.g. 1012345678"
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
+                  disabled={!isSuperAdmin}
                   className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all font-medium"
                   required
                 />
@@ -386,6 +405,7 @@ export const AdminDashboard = () => {
                   placeholder="Kindly specify reference ID in transfer..."
                   value={paymentInstruction}
                   onChange={(e) => setPaymentInstruction(e.target.value)}
+                  disabled={!isSuperAdmin}
                   rows={2}
                   className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all font-medium"
                   required
@@ -394,7 +414,7 @@ export const AdminDashboard = () => {
 
               <button
                 type="submit"
-                disabled={savingAccount}
+                disabled={savingAccount || !isSuperAdmin}
                 className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Save className="h-4 w-4" />

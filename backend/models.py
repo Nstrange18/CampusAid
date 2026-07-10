@@ -12,6 +12,9 @@ class User(Base):
     phone_number = Column(String, nullable=False)
     password_hash = Column(String, nullable=False)
     role = Column(String, nullable=False)  # student, donor, admin
+    account_status = Column(String, default="active")  # active, suspended
+    suspended_at = Column(DateTime, nullable=True)
+    suspension_reason = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Relationships
@@ -69,6 +72,7 @@ class Administrator(Base):
     verified_donations = relationship("DonationRecord", back_populates="verifier")
     disbursements = relationship("Disbursement", back_populates="admin")
     invite_tokens = relationship("AdminInviteToken", back_populates="created_by_admin")
+    activity_logs = relationship("ActivityLog", back_populates="admin")
 
 
 class FundraisingRequest(Base):
@@ -226,12 +230,27 @@ class AdminInviteToken(Base):
     created_by_admin_id = Column(Integer, ForeignKey("administrators.admin_id"), nullable=True)
     is_used = Column(Boolean, default=False)
     used_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Relationships
     created_by_admin = relationship("Administrator", back_populates="invite_tokens")
     used_by_user = relationship("User")
+
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    log_id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("administrators.admin_id", ondelete="SET NULL"), nullable=True)
+    action = Column(String, nullable=False)
+    target_type = Column(String, nullable=True)
+    target_id = Column(Integer, nullable=True)
+    details = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    admin = relationship("Administrator", back_populates="activity_logs")
 
 
 class RefreshToken(Base):

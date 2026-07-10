@@ -2,7 +2,9 @@ import os
 import uuid
 import shutil
 import datetime
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
@@ -21,6 +23,50 @@ def get_admin_record(current_user: models.User, db: Session) -> models.Administr
             detail="Administrator record not found"
         )
     return admin
+
+def count_active_super_admins(db: Session) -> int:
+    return (
+        db.query(models.Administrator)
+        .join(models.User, models.User.user_id == models.Administrator.user_id)
+        .filter(
+            models.Administrator.is_super_admin == True,
+            models.User.account_status != "suspended"
+        )
+        .count()
+    )
+
+def ensure_not_last_super_admin(target_user: models.User, db: Session):
+    if target_user.role != "admin" or not target_user.admin or not target_user.admin.is_super_admin:
+        return
+    if count_active_super_admins(db) <= 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot remove, suspend, or demote the last active super admin"
+        )
+
+def revoke_user_refresh_tokens(user_id: int, db: Session):
+    now = datetime.datetime.utcnow()
+    db.query(models.RefreshToken).filter(
+        models.RefreshToken.user_id == user_id,
+        models.RefreshToken.revoked_at.is_(None)
+    ).update({"revoked_at": now}, synchronize_session=False)
+
+def log_admin_activity(
+    db: Session,
+    current_user: models.User,
+    action: str,
+    target_type: Optional[str] = None,
+    target_id: Optional[int] = None,
+    details: Optional[str] = None
+):
+    admin = get_admin_record(current_user, db)
+    db.add(models.ActivityLog(
+        admin_id=admin.admin_id,
+        action=action,
+        target_type=target_type,
+        target_id=target_id,
+        details=details
+    ))
 
 @router.get("/dashboard")
 def get_admin_dashboard(current_user: models.User = Depends(auth.get_current_admin), db: Session = Depends(get_db)):
@@ -209,6 +255,7 @@ def approve_request(
         message=f"Your request '{request.title}' has been approved and published as an active campaign! Reason: {reason}"
     )
     db.add(new_notif)
+    log_admin_activity(db, current_user, "approve_request", "fundraising_request", request.request_id, reason)
     db.commit()
     db.refresh(request)
     return request
@@ -248,6 +295,7 @@ def reject_request(
         message=f"Your request '{request.title}' was rejected. Reason: {reason}"
     )
     db.add(new_notif)
+    log_admin_activity(db, current_user, "reject_request", "fundraising_request", request.request_id, reason)
     db.commit()
     db.refresh(request)
     return request
@@ -306,6 +354,7 @@ def verify_donation(id: int, current_user: models.User = Depends(auth.get_curren
     )
     db.add(donor_notif)
 
+    log_admin_activity(db, current_user, "verify_donation", "donation", donation.donation_id)
     db.commit()
     db.refresh(donation)
     return donation
@@ -342,6 +391,7 @@ def reject_donation(
     )
     db.add(donor_notif)
 
+    log_admin_activity(db, current_user, "reject_donation", "donation", donation.donation_id, reason)
     db.commit()
     db.refresh(donation)
     return donation
@@ -368,6 +418,7 @@ def update_campaign_status(
         raise HTTPException(status_code=400, detail="Invalid status parameter")
 
     request.status = new_status
+    log_admin_activity(db, current_user, "update_campaign_status", "fundraising_request", request.request_id, new_status)
     db.commit()
     db.refresh(request)
     return request
@@ -391,6 +442,7 @@ def generate_report(
         report_description=report_in.report_description
     )
     db.add(new_report)
+    log_admin_activity(db, current_user, "generate_report", "report", None, report_in.report_type)
     db.commit()
     db.refresh(new_report)
     return new_report
@@ -420,7 +472,8 @@ def get_users(current_user: models.User = Depends(auth.get_current_admin), db: S
         elif u.role == "admin" and u.admin:
             role_details = {
                 "staff_id": u.admin.staff_id,
-                "position": u.admin.position
+                "position": u.admin.position,
+                "is_super_admin": u.admin.is_super_admin
             }
             
         res.append({
@@ -429,15 +482,144 @@ def get_users(current_user: models.User = Depends(auth.get_current_admin), db: S
             "email": u.email,
             "phone_number": u.phone_number,
             "role": u.role,
+            "account_status": u.account_status,
+            "suspended_at": u.suspended_at,
+            "suspension_reason": u.suspension_reason,
+            "is_super_admin": bool(u.admin and u.admin.is_super_admin),
             "created_at": u.created_at,
             "details": role_details
         })
     return res
 
+@router.put("/users/{user_id}/suspend")
+def suspend_user(
+    user_id: int,
+    payload: schemas.UserStatusUpdate,
+    current_user: models.User = Depends(auth.get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    target = db.query(models.User).filter(models.User.user_id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target.user_id == current_user.user_id:
+        raise HTTPException(status_code=400, detail="You cannot suspend your own account")
+
+    ensure_not_last_super_admin(target, db)
+    target.account_status = "suspended"
+    target.suspended_at = datetime.datetime.utcnow()
+    target.suspension_reason = payload.reason or "Suspended by super admin"
+    if target.student:
+        target.student.student_status = "suspended"
+    revoke_user_refresh_tokens(target.user_id, db)
+    log_admin_activity(db, current_user, "suspend_user", "user", target.user_id, target.suspension_reason)
+    db.commit()
+    db.refresh(target)
+    return {"message": "User suspended", "user_id": target.user_id, "account_status": target.account_status}
+
+@router.put("/users/{user_id}/reactivate")
+def reactivate_user(
+    user_id: int,
+    payload: Optional[schemas.UserStatusUpdate] = None,
+    current_user: models.User = Depends(auth.get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    target = db.query(models.User).filter(models.User.user_id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    target.account_status = "active"
+    target.suspended_at = None
+    target.suspension_reason = None
+    if target.student:
+        target.student.student_status = "active"
+    log_admin_activity(db, current_user, "reactivate_user", "user", target.user_id, payload.reason if payload else None)
+    db.commit()
+    db.refresh(target)
+    return {"message": "User reactivated", "user_id": target.user_id, "account_status": target.account_status}
+
+@router.put("/users/{user_id}/promote-superadmin")
+def promote_super_admin(
+    user_id: int,
+    current_user: models.User = Depends(auth.get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    target = db.query(models.User).filter(models.User.user_id == user_id).first()
+    if not target or target.role != "admin" or not target.admin:
+        raise HTTPException(status_code=404, detail="Administrator not found")
+
+    target.admin.is_super_admin = True
+    log_admin_activity(db, current_user, "promote_super_admin", "user", target.user_id)
+    db.commit()
+    return {"message": "Admin promoted to super admin", "user_id": target.user_id}
+
+@router.put("/users/{user_id}/demote-superadmin")
+def demote_super_admin(
+    user_id: int,
+    current_user: models.User = Depends(auth.get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    target = db.query(models.User).filter(models.User.user_id == user_id).first()
+    if not target or target.role != "admin" or not target.admin:
+        raise HTTPException(status_code=404, detail="Administrator not found")
+    if target.user_id == current_user.user_id:
+        raise HTTPException(status_code=400, detail="You cannot demote your own account")
+
+    ensure_not_last_super_admin(target, db)
+    target.admin.is_super_admin = False
+    log_admin_activity(db, current_user, "demote_super_admin", "user", target.user_id)
+    db.commit()
+    return {"message": "Super admin demoted", "user_id": target.user_id}
+
+@router.delete("/users/{user_id}")
+def delete_user(
+    user_id: int,
+    current_user: models.User = Depends(auth.get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    target = db.query(models.User).filter(models.User.user_id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target.user_id == current_user.user_id:
+        raise HTTPException(status_code=400, detail="You cannot delete your own account")
+
+    ensure_not_last_super_admin(target, db)
+
+    blocking_reasons = []
+    if target.student and target.student.requests:
+        blocking_reasons.append("student fundraising history")
+    if target.donor and target.donor.donations:
+        blocking_reasons.append("donor donation history")
+    if target.admin:
+        if target.admin.checklists:
+            blocking_reasons.append("verification checklists")
+        if target.admin.reports:
+            blocking_reasons.append("reports")
+        if target.admin.verified_donations:
+            blocking_reasons.append("verified donations")
+        if target.admin.disbursements:
+            blocking_reasons.append("disbursements")
+        if target.admin.donation_accounts:
+            blocking_reasons.append("trust account updates")
+        if target.admin.invite_tokens:
+            blocking_reasons.append("admin invite history")
+
+    if blocking_reasons:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot safely delete this account because it has {', '.join(blocking_reasons)}. Suspend it instead."
+        )
+
+    target_id = target.user_id
+    target_email = target.email
+    db.delete(target)
+    log_admin_activity(db, current_user, "delete_user", "user", target_id, target_email)
+    db.commit()
+    return {"message": "User deleted", "user_id": target_id}
+
 @router.put("/donation-account", response_model=schemas.DonationAccountOut)
 def update_donation_account(
     account_in: schemas.DonationAccountCreate,
-    current_user: models.User = Depends(auth.get_current_admin),
+    current_user: models.User = Depends(auth.get_current_super_admin),
     db: Session = Depends(get_db)
 ):
     admin = get_admin_record(current_user, db)
@@ -452,6 +634,7 @@ def update_donation_account(
         existing.payment_instruction = account_in.payment_instruction
         existing.admin_id = admin.admin_id
         existing.updated_at = datetime.datetime.utcnow()
+        log_admin_activity(db, current_user, "update_donation_account", "donation_account", existing.account_id)
         db.commit()
         db.refresh(existing)
         return existing
@@ -465,6 +648,7 @@ def update_donation_account(
             status="active"
         )
         db.add(new_account)
+        log_admin_activity(db, current_user, "create_donation_account", "donation_account", None)
         db.commit()
         db.refresh(new_account)
         return new_account
@@ -528,6 +712,7 @@ def create_disbursement(
     )
     db.add(student_notif)
     
+    log_admin_activity(db, current_user, "create_disbursement", "disbursement", None, disbursement_in.payment_reference)
     db.commit()
     db.refresh(new_disbursement)
     return new_disbursement
@@ -569,6 +754,7 @@ def upload_disbursement_evidence(
     # Upload to Cloudinary
     evidence_url = upload_to_cloudinary(file, folder="disbursement_evidence")
     disbursement.evidence_file = evidence_url
+    log_admin_activity(db, current_user, "upload_disbursement_evidence", "disbursement", disbursement.disbursement_id)
     db.commit()
     db.refresh(disbursement)
     return disbursement
@@ -596,6 +782,7 @@ def generate_invite_link(
         expires_at=expires_at
     )
     db.add(invite_token)
+    log_admin_activity(db, current_user, "generate_invite_link", "admin_invite_token", None)
     db.commit()
     db.refresh(invite_token)
     return invite_token
@@ -609,4 +796,48 @@ def list_invite_links(
     """Super admin lists all invite tokens with their status."""
     get_admin_record(current_user, db)
     return db.query(models.AdminInviteToken).order_by(models.AdminInviteToken.created_at.desc()).all()
+
+@router.put("/invite-links/{token_id}/revoke", response_model=schemas.AdminInviteTokenOut)
+def revoke_invite_link(
+    token_id: int,
+    current_user: models.User = Depends(auth.get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    invite = db.query(models.AdminInviteToken).filter(models.AdminInviteToken.token_id == token_id).first()
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite link not found")
+    if invite.is_used:
+        raise HTTPException(status_code=400, detail="Used invite links cannot be revoked")
+    if invite.revoked_at:
+        raise HTTPException(status_code=400, detail="Invite link has already been revoked")
+
+    invite.revoked_at = datetime.datetime.utcnow()
+    log_admin_activity(db, current_user, "revoke_invite_link", "admin_invite_token", invite.token_id)
+    db.commit()
+    db.refresh(invite)
+    return invite
+
+@router.get("/activity-logs", response_model=list[schemas.ActivityLogOut])
+def list_activity_logs(
+    current_user: models.User = Depends(auth.get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    get_admin_record(current_user, db)
+    return db.query(models.ActivityLog).order_by(models.ActivityLog.created_at.desc()).limit(100).all()
+
+@router.post("/refresh-tokens/cleanup")
+def cleanup_refresh_tokens(
+    current_user: models.User = Depends(auth.get_current_super_admin),
+    db: Session = Depends(get_db)
+):
+    now = datetime.datetime.utcnow()
+    deleted_count = db.query(models.RefreshToken).filter(
+        or_(
+            models.RefreshToken.revoked_at.isnot(None),
+            models.RefreshToken.expires_at < now
+        )
+    ).delete(synchronize_session=False)
+    log_admin_activity(db, current_user, "cleanup_refresh_tokens", "refresh_token", None, str(deleted_count))
+    db.commit()
+    return {"message": "Refresh token cleanup complete", "deleted_count": deleted_count}
 

@@ -58,23 +58,32 @@ async function request(path, options = {}) {
     body = JSON.stringify(body);
   }
 
-  let response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-    body,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers,
+      body,
+    });
+  } catch (err) {
+    throw new Error("Backend unavailable. Please check the server URL, CORS settings, or your network connection.");
+  }
 
   if (response.status === 401 && !options.skipAuthRefresh) {
     try {
       const newToken = await refreshAccessToken();
-      response = await fetch(`${API_URL}${path}`, {
-        ...options,
-        headers: {
-          ...headers,
-          Authorization: `Bearer ${newToken}`,
-        },
-        body,
-      });
+      try {
+        response = await fetch(`${API_URL}${path}`, {
+          ...options,
+          headers: {
+            ...headers,
+            Authorization: `Bearer ${newToken}`,
+          },
+          body,
+        });
+      } catch (err) {
+        throw new Error("Backend unavailable. Please check the server URL, CORS settings, or your network connection.");
+      }
     } catch (err) {
       throw err;
     }
@@ -106,10 +115,15 @@ export const api = {
     formData.append("username", email);
     formData.append("password", password);
     
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: "POST",
-      body: formData,
-    });
+    let response;
+    try {
+      response = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        body: formData,
+      });
+    } catch (err) {
+      throw new Error("Backend unavailable. Please check the server URL, CORS settings, or your network connection.");
+    }
     
     if (!response.ok) {
       let errorDetail = "Incorrect email or password";
@@ -159,6 +173,14 @@ export const api = {
   registerViaInvite: (data) => request("/auth/register/admin-invite", { method: "POST", body: data }),
   generateInviteLink: () => request("/admin/invite-links", { method: "POST" }),
   getInviteLinks: () => request("/admin/invite-links", { method: "GET" }),
+  revokeInviteLink: (tokenId) => request(`/admin/invite-links/${tokenId}/revoke`, { method: "PUT" }),
+  suspendUser: (userId, reason) => request(`/admin/users/${userId}/suspend`, { method: "PUT", body: { reason } }),
+  reactivateUser: (userId, reason) => request(`/admin/users/${userId}/reactivate`, { method: "PUT", body: { reason } }),
+  promoteSuperAdmin: (userId) => request(`/admin/users/${userId}/promote-superadmin`, { method: "PUT" }),
+  demoteSuperAdmin: (userId) => request(`/admin/users/${userId}/demote-superadmin`, { method: "PUT" }),
+  deleteUser: (userId) => request(`/admin/users/${userId}`, { method: "DELETE" }),
+  getActivityLogs: () => request("/admin/activity-logs", { method: "GET" }),
+  cleanupRefreshTokens: () => request("/admin/refresh-tokens/cleanup", { method: "POST" }),
 };
 export default api;
 export { API_URL };

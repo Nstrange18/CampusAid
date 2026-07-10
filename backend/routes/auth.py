@@ -147,6 +147,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if user.account_status == "suspended":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account has been suspended. Please contact an administrator."
+        )
 
     return issue_token_pair(user, db)
 
@@ -174,6 +179,13 @@ def refresh_token(data: schemas.RefreshTokenRequest, db: Session = Depends(get_d
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token"
+        )
+    if user.account_status == "suspended":
+        token_record.revoked_at = datetime.datetime.utcnow()
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account has been suspended. Please contact an administrator."
         )
 
     token_record.revoked_at = datetime.datetime.utcnow()
@@ -203,6 +215,9 @@ def get_me(current_user: models.User = Depends(auth.get_current_user), db: Sessi
         "email": current_user.email,
         "phone_number": current_user.phone_number,
         "role": current_user.role,
+        "account_status": current_user.account_status,
+        "suspended_at": current_user.suspended_at,
+        "suspension_reason": current_user.suspension_reason,
         "created_at": current_user.created_at
     }
     
@@ -243,6 +258,8 @@ def validate_invite_token(token: str, db: Session = Depends(get_db)):
         return {"valid": False, "reason": "Invite link not found"}
     if invite.is_used:
         return {"valid": False, "reason": "This invite link has already been used"}
+    if invite.revoked_at:
+        return {"valid": False, "reason": "This invite link has been revoked"}
     if invite.expires_at < datetime.datetime.utcnow():
         return {"valid": False, "reason": "This invite link has expired"}
     return {"valid": True, "expires_at": invite.expires_at}
@@ -257,6 +274,8 @@ def register_admin_via_invite(data: schemas.AdminRegisterViaInvite, db: Session 
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid invite token")
     if invite.is_used:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This invite link has already been used")
+    if invite.revoked_at:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This invite link has been revoked")
     if invite.expires_at < datetime.datetime.utcnow():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This invite link has expired")
 

@@ -42,6 +42,9 @@ class UserCreate(UserBase):
 class UserOut(UserBase):
     user_id: int
     role: str
+    account_status: str = "active"
+    suspended_at: Optional[datetime] = None
+    suspension_reason: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -326,6 +329,7 @@ class AdminInviteTokenOut(BaseModel):
     created_by_admin_id: Optional[int] = None
     is_used: bool
     used_by_user_id: Optional[int] = None
+    revoked_at: Optional[datetime] = None
     expires_at: datetime
     created_at: datetime
 
@@ -341,3 +345,20 @@ class AdminRegisterViaInvite(BaseModel):
     password: str
     staff_id: str
     position: str
+
+
+class UserStatusUpdate(BaseModel):
+    reason: Optional[str] = None
+
+
+class ActivityLogOut(BaseModel):
+    log_id: int
+    admin_id: Optional[int] = None
+    action: str
+    target_type: Optional[str] = None
+    target_id: Optional[int] = None
+    details: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
