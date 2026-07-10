@@ -296,10 +296,10 @@ export const AdminDashboard = () => {
 
       {/* TAB CONTENT: OVERVIEW */}
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           
           {/* Recent Applications Activity */}
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm lg:col-span-2 space-y-4 transition-colors duration-300">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm lg:col-span-2 space-y-4 transition-colors duration-300 lg:max-h-[calc(100vh-13rem)] overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2">
                 <Activity className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
@@ -313,7 +313,7 @@ export const AdminDashboard = () => {
             {recent_requests.length === 0 ? (
               <p className="text-xs text-slate-450 dark:text-slate-500 py-6 text-center">No student applications submitted yet.</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 lg:max-h-[calc(100vh-20rem)] overflow-y-auto custom-scrollbar pr-1">
                 {recent_requests.map((r) => (
                   <div key={r.request_id} className="p-4 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between gap-4">
                     <div className="space-y-1 min-w-0">
@@ -338,7 +338,7 @@ export const AdminDashboard = () => {
           </div>
 
           {/* System Settings: Administration Payment Accounts */}
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300 lg:sticky lg:top-24 lg:self-start">
             <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-2">
                 <Landmark className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />

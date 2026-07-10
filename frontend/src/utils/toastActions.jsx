@@ -2,6 +2,15 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 
 const baseButtonClass = "px-3 py-1.5 rounded-lg text-[11px] font-bold transition-colors";
+const toastOptions = {
+  autoClose: false,
+  closeOnClick: false,
+  closeButton: false,
+  draggable: false,
+  className: "!rounded-xl !border !border-slate-200 dark:!border-slate-700 !bg-white dark:!bg-slate-900 !shadow-xl",
+  bodyClassName: "!p-0 !m-0",
+};
+const cancelButtonClass = "border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700";
 
 export const confirmToast = ({
   title = "Confirm action",
@@ -17,16 +26,16 @@ export const confirmToast = ({
     };
 
     return (
-      <div className="space-y-3 text-slate-800 dark:text-slate-100">
+      <div className="space-y-3 text-slate-900 dark:text-slate-100">
         <div>
-          <p className="text-sm font-bold">{title}</p>
-          {message && <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{message}</p>}
+          <p className="text-sm font-bold text-slate-950 dark:text-white">{title}</p>
+          {message && <p className="mt-1 text-xs leading-relaxed text-slate-700 dark:text-slate-200">{message}</p>}
         </div>
         <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={() => finish(false)}
-            className={`${baseButtonClass} border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800`}
+            className={`${baseButtonClass} ${cancelButtonClass}`}
           >
             {cancelLabel}
           </button>
@@ -42,12 +51,7 @@ export const confirmToast = ({
     );
   };
 
-  toast(<ConfirmContent />, {
-    autoClose: false,
-    closeOnClick: false,
-    closeButton: false,
-    draggable: false,
-  });
+  toast(<ConfirmContent />, toastOptions);
 });
 
 const PromptContent = ({ title, message, placeholder, confirmLabel, cancelLabel, defaultValue, closeToast, resolve }) => {
@@ -59,23 +63,23 @@ const PromptContent = ({ title, message, placeholder, confirmLabel, cancelLabel,
   };
 
   return (
-    <div className="space-y-3 text-slate-800 dark:text-slate-100">
+    <div className="space-y-3 text-slate-900 dark:text-slate-100">
       <div>
-        <p className="text-sm font-bold">{title}</p>
-        {message && <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{message}</p>}
+        <p className="text-sm font-bold text-slate-950 dark:text-white">{title}</p>
+        {message && <p className="mt-1 text-xs leading-relaxed text-slate-700 dark:text-slate-200">{message}</p>}
       </div>
       <textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
         rows={3}
-        className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+        className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
       />
       <div className="flex justify-end gap-2">
         <button
           type="button"
           onClick={() => finish(null)}
-          className={`${baseButtonClass} border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800`}
+          className={`${baseButtonClass} ${cancelButtonClass}`}
         >
           {cancelLabel}
         </button>
@@ -110,10 +114,5 @@ export const promptToast = ({
       closeToast={closeToast}
       resolve={resolve}
     />
-  ), {
-    autoClose: false,
-    closeOnClick: false,
-    closeButton: false,
-    draggable: false,
-  });
+  ), toastOptions);
 });

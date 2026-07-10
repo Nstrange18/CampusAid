@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useAuth } from '../context/AuthContext';
-import { Users, Search, Calendar, Shield, User, Heart, LinkIcon, Copy, Check, Clock, XCircle, CheckCircle2, Plus, Ban, RotateCcw, Trash2, ShieldCheck, ShieldX, Activity, RefreshCw } from 'lucide-react';
+import { Users, Search, Calendar, Shield, User, Heart, LinkIcon, Copy, Check, Clock, XCircle, CheckCircle2, Plus, Ban, RotateCcw, Trash2, ShieldCheck, ShieldX, Activity, RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { confirmToast, promptToast } from '../utils/toastActions';
 
@@ -260,34 +260,56 @@ export const AdminUsers = () => {
     );
   };
 
+  const renderActionContent = (actionKey, Icon, label, loadingLabel) => (
+    actionLoading === actionKey ? (
+      <>
+        <Loader2 className="h-3 w-3 animate-spin" />
+        {loadingLabel}
+      </>
+    ) : (
+      <>
+        <Icon className="h-3 w-3" />
+        {label}
+      </>
+    )
+  );
+
+  const actionButtonBase = "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border transition-all disabled:opacity-60 disabled:cursor-not-allowed";
+
   const renderUserActions = (target) => {
     if (!isSuperAdmin || target.user_id === currentUser?.user_id) return null;
     const suspended = target.account_status === "suspended";
     const isAdmin = target.role === "admin";
     const targetIsSuperAdmin = target.is_super_admin || target.details?.is_super_admin;
+    const suspendKey = `suspend-${target.user_id}`;
+    const reactivateKey = `reactivate-${target.user_id}`;
+    const promoteKey = `promote-${target.user_id}`;
+    const demoteKey = `demote-${target.user_id}`;
+    const deleteKey = `delete-${target.user_id}`;
+    const anyActionRunning = Boolean(actionLoading);
     return (
       <div className="flex flex-wrap items-center gap-1.5">
         {suspended ? (
-          <button onClick={() => handleReactivateUser(target)} disabled={actionLoading === `reactivate-${target.user_id}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border border-emerald-200 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20">
-            <RotateCcw className="h-3 w-3" /> Reactivate
+          <button onClick={() => handleReactivateUser(target)} disabled={anyActionRunning} className={`${actionButtonBase} border-emerald-200 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20`}>
+            {renderActionContent(reactivateKey, RotateCcw, "Reactivate", "Reactivating...")}
           </button>
         ) : (
-          <button onClick={() => handleSuspendUser(target)} disabled={actionLoading === `suspend-${target.user_id}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border border-orange-200 dark:border-orange-900/40 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20">
-            <Ban className="h-3 w-3" /> Suspend
+          <button onClick={() => handleSuspendUser(target)} disabled={anyActionRunning} className={`${actionButtonBase} border-orange-200 dark:border-orange-900/40 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20`}>
+            {renderActionContent(suspendKey, Ban, "Suspend", "Suspending...")}
           </button>
         )}
         {isAdmin && !targetIsSuperAdmin && (
-          <button onClick={() => handlePromoteUser(target)} disabled={actionLoading === `promote-${target.user_id}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border border-indigo-200 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20">
-            <ShieldCheck className="h-3 w-3" /> Promote
+          <button onClick={() => handlePromoteUser(target)} disabled={anyActionRunning} className={`${actionButtonBase} border-indigo-200 dark:border-indigo-900/40 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20`}>
+            {renderActionContent(promoteKey, ShieldCheck, "Promote", "Promoting...")}
           </button>
         )}
         {isAdmin && targetIsSuperAdmin && (
-          <button onClick={() => handleDemoteUser(target)} disabled={actionLoading === `demote-${target.user_id}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40">
-            <ShieldX className="h-3 w-3" /> Demote
+          <button onClick={() => handleDemoteUser(target)} disabled={anyActionRunning} className={`${actionButtonBase} border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40`}>
+            {renderActionContent(demoteKey, ShieldX, "Demote", "Demoting...")}
           </button>
         )}
-        <button onClick={() => handleDeleteUser(target)} disabled={actionLoading === `delete-${target.user_id}`} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20">
-          <Trash2 className="h-3 w-3" /> Delete
+        <button onClick={() => handleDeleteUser(target)} disabled={anyActionRunning} className={`${actionButtonBase} border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20`}>
+          {renderActionContent(deleteKey, Trash2, "Delete", "Deleting...")}
         </button>
       </div>
     );
@@ -593,11 +615,20 @@ export const AdminUsers = () => {
                             {!inv.is_used && !inv.revoked_at && new Date(inv.expires_at) >= new Date() ? (
                               <button
                                 onClick={() => handleRevokeInvite(inv)}
-                                disabled={actionLoading === `revoke-${inv.token_id}`}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                disabled={Boolean(actionLoading)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-60 disabled:cursor-not-allowed"
                               >
-                                <XCircle className="h-3 w-3" />
-                                Revoke
+                                {actionLoading === `revoke-${inv.token_id}` ? (
+                                  <>
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    Revoking...
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle className="h-3 w-3" />
+                                    Revoke
+                                  </>
+                                )}
                               </button>
                             ) : (
                               <span className="text-[10px] text-slate-400 dark:text-slate-500">No action</span>
@@ -628,11 +659,20 @@ export const AdminUsers = () => {
               </div>
               <button
                 onClick={handleCleanupTokens}
-                disabled={actionLoading === "cleanup-tokens"}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                disabled={Boolean(actionLoading)}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <RefreshCw className="h-3.5 w-3.5" />
-                Clean Expired Sessions
+                {actionLoading === "cleanup-tokens" ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Cleaning...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Clean Expired Sessions
+                  </>
+                )}
               </button>
             </div>
             {logsLoading ? (
