@@ -77,7 +77,7 @@ export const AdminRequestReview = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate('/admin/requests')}
@@ -91,19 +91,19 @@ export const AdminRequestReview = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
         
         {/* Core details column */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="min-w-0 space-y-6 lg:col-span-2">
           
           {/* Card: Student details */}
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
+          <div className="min-w-0 overflow-hidden bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <User className="h-5 w-5 text-blue-600 dark:text-blue-450" />
               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Student Demographics</h4>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <div className="grid min-w-0 grid-cols-1 gap-4 text-xs font-semibold text-slate-600 dark:text-slate-300 md:grid-cols-2 [&>p]:min-w-0 [&>p]:break-words">
               <p><span className="text-slate-400 dark:text-slate-500">Full Name:</span> {request.student?.user?.full_name}</p>
               <p><span className="text-slate-400 dark:text-slate-500">Matric Number:</span> {request.student?.matric_number}</p>
               <p><span className="text-slate-400 dark:text-slate-500">Faculty/Dept:</span> {request.student?.faculty} / {request.student?.department}</p>
@@ -114,17 +114,17 @@ export const AdminRequestReview = () => {
           </div>
 
           {/* Card: Campaign Statement */}
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
+          <div className="min-w-0 overflow-hidden bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <Bookmark className="h-5 w-5 text-blue-600 dark:text-blue-455" />
               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Campaign Statement</h4>
             </div>
 
-            <div className="space-y-3">
-              <h5 className="font-extrabold text-slate-800 dark:text-slate-100 text-xs">{request.title}</h5>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{request.description}</p>
+            <div className="min-w-0 space-y-3 [overflow-wrap:anywhere]">
+              <h5 className="min-w-0 font-extrabold text-slate-800 dark:text-slate-100 text-xs">{request.title}</h5>
+              <p className="min-w-0 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{request.description}</p>
               
-              <div className="p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <div className="min-w-0 overflow-hidden p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1.5 text-xs text-slate-500 dark:text-slate-400 [overflow-wrap:anywhere]">
                 <p><span className="font-bold text-slate-700 dark:text-slate-350">Support Needed:</span> {request.support_need_description || request.reason_for_request}</p>
                 <p><span className="font-bold text-slate-700 dark:text-slate-350">Functional Impact:</span> {request.functional_impact || 'Not provided in this legacy application'}</p>
                 <p><span className="font-bold text-slate-700 dark:text-slate-350">Requested Support Type:</span> {request.requested_support_type || request.purpose}</p>
@@ -135,7 +135,7 @@ export const AdminRequestReview = () => {
           </div>
 
           {/* Card: Bank disbursements */}
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
+          <div className="min-w-0 overflow-hidden bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <Landmark className="h-5 w-5 text-blue-600 dark:text-blue-450" />
               <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Student Bank Account (Private)</h4>
@@ -155,7 +155,7 @@ export const AdminRequestReview = () => {
         </div>
 
         {/* Audit sidebar: Checklist triggers and attached files */}
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5 transition-colors duration-300">
             <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm border-b border-slate-100 dark:border-slate-800 pb-3">Audit Control</h4>
 
