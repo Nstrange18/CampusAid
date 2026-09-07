@@ -315,16 +315,17 @@ export const AdminUsers = () => {
     );
   };
 
-  const getRoleBadge = (role) => {
-    switch (role) {
+  const getRoleBadge = (user) => {
+    const superAdmin = user.role === 'admin' && (user.is_super_admin || user.details?.is_super_admin);
+    switch (user.role) {
       case 'admin':
-        return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[9px] font-bold bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/30 rounded uppercase"><Shield className="h-2.5 w-2.5" /> Admin</span>;
+        return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[9px] font-bold bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-900/30 rounded uppercase"><Shield className="h-2.5 w-2.5" /> {superAdmin ? 'Super Admin' : 'Admin'}</span>;
       case 'student':
         return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[9px] font-bold bg-blue-50 dark:bg-blue-955/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30 rounded uppercase"><User className="h-2.5 w-2.5" /> Student</span>;
       case 'donor':
         return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[9px] font-bold bg-emerald-50 dark:bg-emerald-955/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/30 rounded uppercase"><Heart className="h-2.5 w-2.5" /> Donor</span>;
       default:
-        return <span className="px-2.5 py-0.5 text-[9px] font-bold bg-slate-50 dark:bg-slate-950/40 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-800 rounded uppercase">{role}</span>;
+        return <span className="px-2.5 py-0.5 text-[9px] font-bold bg-slate-50 dark:bg-slate-950/40 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-800 rounded uppercase">{user.role}</span>;
     }
   };
 
@@ -416,7 +417,7 @@ export const AdminUsers = () => {
                       <td className="p-4">
                         <span className="font-bold text-slate-800 dark:text-slate-100">{u.full_name}</span>
                       </td>
-                      <td className="p-4">{getRoleBadge(u.role)}</td>
+                      <td className="p-4">{getRoleBadge(u)}</td>
                       <td className="p-4">{getAccountStatusBadge(u)}</td>
                       <td className="p-4">
                         <div className="space-y-0.5">
@@ -466,7 +467,7 @@ export const AdminUsers = () => {
                 <div className="flex items-start justify-between gap-3">
                   <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs">{u.full_name}</h4>
                   <div className="flex flex-col items-end gap-1">
-                    {getRoleBadge(u.role)}
+                    {getRoleBadge(u)}
                     {getAccountStatusBadge(u)}
                   </div>
                 </div>

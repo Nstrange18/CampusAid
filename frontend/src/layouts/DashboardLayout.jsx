@@ -20,6 +20,10 @@ export const DashboardLayout = ({ children }) => {
     return null;
   }
 
+  const roleLabel = user.role === 'admin' && user.is_super_admin
+    ? 'Super Admin'
+    : user.role;
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -126,7 +130,7 @@ export const DashboardLayout = ({ children }) => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">{user.full_name}</p>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 capitalize">{user.role}</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 capitalize">{roleLabel}</p>
             </div>
           </div>
           <button
@@ -207,7 +211,7 @@ export const DashboardLayout = ({ children }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">{user.full_name}</p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 capitalize">{user.role}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 capitalize">{roleLabel}</p>
               </div>
             </div>
             <button
@@ -229,7 +233,7 @@ export const DashboardLayout = ({ children }) => {
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <span className="text-xs font-medium px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-800/50 uppercase tracking-wider transition-colors duration-300">
-              {user.role} Portal
+              {roleLabel} Portal
             </span>
             <div className="h-5 w-[1px] bg-slate-200 dark:bg-slate-800" />
             <div className="flex items-center gap-3">
@@ -245,7 +249,7 @@ export const DashboardLayout = ({ children }) => {
         <div className="lg:hidden px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between transition-colors duration-300">
           <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 capitalize">{getPageTitle()}</h2>
           <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded border border-blue-100 dark:border-blue-800/50 uppercase transition-colors duration-300">
-            {user.role}
+            {roleLabel}
           </span>
         </div>
 
