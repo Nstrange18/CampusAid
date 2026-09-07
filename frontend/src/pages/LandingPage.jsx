@@ -53,7 +53,7 @@ export const LandingPage = () => {
             </div>
             <div>
               <span className="font-extrabold text-xl text-slate-900 dark:text-slate-100 tracking-tight transition-colors duration-300">CampusAid</span>
-              <span className="block text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider -mt-1 transition-colors duration-300">Indigent Support</span>
+              <span className="block text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider -mt-1 transition-colors duration-300">Disability Support</span>
             </div>
           </div>
           
@@ -137,7 +137,7 @@ export const LandingPage = () => {
             Empowering Higher Education
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
-            Supporting Indigent Students<br />
+            Supporting Students with Physical Disabilities<br />
             <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 dark:from-blue-400 dark:via-indigo-300 dark:to-sky-300 bg-clip-text text-transparent animate-pulse">Through Structured Aid</span>
           </h1>
           <p className="text-slate-600 dark:text-slate-300 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
@@ -173,7 +173,7 @@ export const LandingPage = () => {
             </div>
             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">1. Student Application</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Students submit verification documents (invoice bills, advisership recommendation, etc.) outlining financial need and target goals.
+              Students privately submit an accepted disability-evidence pathway and describe the support needed to participate fully in campus life.
             </p>
           </div>
 
@@ -183,7 +183,7 @@ export const LandingPage = () => {
             </div>
             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">2. Admin Verification</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Campus administrators review student credentials, complete an indigent status checklist, and approve genuine requests into public campaigns.
+              Authorized administrators review restricted evidence and publish only the student-approved campaign story.
             </p>
           </div>
 

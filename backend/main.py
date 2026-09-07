@@ -9,34 +9,37 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
-from .database import engine, Base, get_db
+from .database import get_db
 from . import models, schemas, auth
 from .routes import auth as auth_router, students as students_router, donors as donors_router, campaigns as campaigns_router, admin as admin_router
 
-# Initialize Database tables
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(
     title="CampusAid API",
-    description="Backend API for Campus Fundraising Management System for Indigent Students",
+    description="Backend API for disability-related support campaigns for students with physical disabilities",
     version="1.0.0"
 )
 
 # CORS Configuration
+environment = os.getenv("ENVIRONMENT", "development").lower()
 frontend_url = os.getenv("FRONTEND_URL")
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+if environment == "production" and not frontend_url:
+    raise RuntimeError("FRONTEND_URL is required in production")
+
+origins = []
+if environment != "production":
+    origins.extend([
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ])
 if frontend_url:
     origins.append(frontend_url.rstrip("/"))
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$|^https://.*\.vercel\.app$",
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$" if environment != "production" else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,7 +48,8 @@ app.add_middleware(
 # Ensure uploads folder exists and is mounted
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+if environment != "production":
+    app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # Include Routers
 app.include_router(auth_router.router)

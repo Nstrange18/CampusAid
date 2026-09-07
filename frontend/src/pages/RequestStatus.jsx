@@ -47,20 +47,22 @@ export const RequestStatus = () => {
   }
 
   const getStatusBanner = () => {
-    switch (request.status) {
-      case 'pending':
+    const lifecycleStatus = request.application_status === 'approved' ? request.campaign_status : request.application_status;
+    switch (lifecycleStatus) {
+      case 'submitted':
+      case 'under_review':
         return (
           <div className="p-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-900/30 rounded-2xl flex gap-3 text-amber-800 dark:text-amber-400 shadow-sm transition-colors duration-300">
             <Clock className="h-6 w-6 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5 animate-pulse" />
             <div className="space-y-1">
               <h4 className="font-bold text-sm">Application Under Review</h4>
               <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-                Campus administrators are currently reviewing your documents and verifying your indigent status. Check back here for updates.
+                Authorized campus administrators are reviewing your disability-support evidence. Your private evidence is not shown to donors.
               </p>
             </div>
           </div>
         );
-      case 'approved':
+      case 'active':
         return (
           <div className="p-5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900/30 rounded-2xl flex gap-3 text-emerald-800 dark:text-emerald-450 shadow-sm transition-colors duration-300">
             <CheckCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-500 shrink-0 mt-0.5" />
@@ -94,14 +96,15 @@ export const RequestStatus = () => {
             </div>
           </div>
         );
-      case 'completed':
+      case 'funded':
+      case 'closed':
         return (
           <div className="p-5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl flex gap-3 text-blue-800 dark:text-blue-400 shadow-sm transition-colors duration-300">
             <HeartHandshake className="h-6 w-6 text-blue-600 dark:text-blue-500 shrink-0 mt-0.5" />
             <div className="space-y-2">
-              <h4 className="font-bold text-sm">Campaign Completed!</h4>
+              <h4 className="font-bold text-sm">{lifecycleStatus === 'closed' ? 'Support Completed!' : 'Campaign Fully Funded!'}</h4>
               <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-                Congratulations! The target goal of ₦{request.amount_needed.toLocaleString()} has been met. The funds are processed for tuition/disbursement.
+                The target of ₦{request.amount_needed.toLocaleString()} has been met. Disbursement progress is tracked separately from fundraising.
               </p>
             </div>
           </div>
@@ -116,7 +119,8 @@ export const RequestStatus = () => {
     { label: "Matric number confirmed", status: request.checklist?.matric_number_confirmed },
     { label: "Faculty/Department confirmed", status: request.checklist?.department_faculty_confirmed },
     { label: "Uploaded documents reviewed", status: request.checklist?.documents_reviewed },
-    { label: "Financial need evidence confirmed", status: request.checklist?.financial_need_confirmed },
+    { label: "Disability evidence pathway confirmed", status: request.checklist?.disability_evidence_confirmed },
+    { label: "Disability-related support need confirmed", status: request.checklist?.support_need_confirmed },
     { label: "Requested amount is reasonable", status: request.checklist?.requested_amount_reasonable },
     { label: "Duplicate support checked", status: request.checklist?.duplicate_support_checked }
   ];

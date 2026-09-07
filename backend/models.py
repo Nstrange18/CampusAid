@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Numeric, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -82,18 +82,28 @@ class FundraisingRequest(Base):
     student_id = Column(Integer, ForeignKey("students.student_id", ondelete="CASCADE"), nullable=False)
     title = Column(String, nullable=False)
     description = Column(Text, nullable=False)
-    amount_needed = Column(Float, nullable=False)
-    amount_raised = Column(Float, default=0.0)
+    amount_needed = Column(Numeric(12, 2), nullable=False)
+    amount_raised = Column(Numeric(12, 2), default=0)
     purpose = Column(String, nullable=False)
-    status = Column(String, default="pending")  # pending, approved, rejected, completed
+    status = Column(String, default="pending")  # legacy compatibility mirror
     reason_for_request = Column(Text, nullable=False)
     urgency_level = Column(String, nullable=False)  # low, medium, high
     student_bank_name = Column(String, nullable=True)
     student_account_name = Column(String, nullable=True)
     student_account_number = Column(String, nullable=True)
-    parent_or_guardian_occupation = Column(String, nullable=False)
-    previous_support_received = Column(String, nullable=False)  # yes, no
+    # Legacy indigence fields retained during the compatibility window.
+    parent_or_guardian_occupation = Column(String, nullable=True)
+    previous_support_received = Column(String, nullable=True)  # yes, no
     supporting_statement = Column(Text, nullable=False)
+    support_need_description = Column(Text, nullable=True)
+    functional_impact = Column(Text, nullable=True)
+    requested_support_type = Column(String, nullable=True)
+    public_story = Column(Text, nullable=True)
+    public_display_preference = Column(String, default="first_name_initial")
+    public_consent = Column(Boolean, default=False)
+    public_consent_at = Column(DateTime, nullable=True)
+    application_status = Column(String, default="submitted")  # submitted, under_review, changes_requested, approved, rejected, withdrawn
+    campaign_status = Column(String, default="unpublished")  # unpublished, active, paused, funded, closed, cancelled
     admin_decision_reason = Column(Text, nullable=True)
     date_submitted = Column(DateTime, default=datetime.datetime.utcnow)
 
@@ -111,7 +121,11 @@ class VerificationDocument(Base):
     document_id = Column(Integer, primary_key=True, index=True)
     request_id = Column(Integer, ForeignKey("fundraising_requests.request_id", ondelete="CASCADE"), nullable=False)
     document_type = Column(String, nullable=False)  # school_fee_invoice, student_id_card, etc.
-    file_path = Column(String, nullable=False)
+    file_path = Column(String, nullable=True)  # legacy public URL; migrate to storage_key
+    storage_key = Column(String, nullable=True)
+    storage_resource_type = Column(String, nullable=True)
+    storage_format = Column(String, nullable=True)
+    storage_version = Column(Integer, nullable=True)
     upload_date = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Relationships
@@ -129,6 +143,9 @@ class VerificationChecklist(Base):
     department_faculty_confirmed = Column(Boolean, default=False)
     documents_reviewed = Column(Boolean, default=False)
     financial_need_confirmed = Column(Boolean, default=False)
+    disability_evidence_confirmed = Column(Boolean, default=False)
+    support_need_confirmed = Column(Boolean, default=False)
+    evidence_pathway = Column(String, nullable=True)
     requested_amount_reasonable = Column(Boolean, default=False)
     duplicate_support_checked = Column(Boolean, default=False)
     decision_recorded = Column(Boolean, default=False)
@@ -161,11 +178,16 @@ class DonationRecord(Base):
     donation_id = Column(Integer, primary_key=True, index=True)
     donor_id = Column(Integer, ForeignKey("donors.donor_id"), nullable=False)
     request_id = Column(Integer, ForeignKey("fundraising_requests.request_id", ondelete="CASCADE"), nullable=False)
-    amount = Column(Float, nullable=False)
+    amount = Column(Numeric(12, 2), nullable=False)
     transaction_reference = Column(String, unique=True, index=True, nullable=False)
-    proof_file = Column(String, nullable=True)
+    proof_file = Column(String, nullable=True)  # legacy URL; do not expose directly
+    proof_storage_key = Column(String, nullable=True)
+    proof_storage_resource_type = Column(String, nullable=True)
+    proof_storage_format = Column(String, nullable=True)
+    proof_storage_version = Column(Integer, nullable=True)
     donation_date = Column(DateTime, default=datetime.datetime.utcnow)
     verification_status = Column(String, default="pending")  # pending, verified, rejected
+    rejection_reason = Column(Text, nullable=True)
     verified_by = Column(Integer, ForeignKey("administrators.admin_id"), nullable=True)
     verified_at = Column(DateTime, nullable=True)
 
@@ -173,6 +195,10 @@ class DonationRecord(Base):
     donor = relationship("Donor", back_populates="donations")
     request = relationship("FundraisingRequest", back_populates="donations")
     verifier = relationship("Administrator", back_populates="verified_donations")
+
+    @property
+    def proof_access_available(self):
+        return bool(self.proof_storage_key or self.proof_file)
 
 
 class Report(Base):
@@ -210,9 +236,13 @@ class Disbursement(Base):
     admin_id = Column(Integer, ForeignKey("administrators.admin_id", ondelete="SET NULL"), nullable=True)
     recipient_type = Column(String, nullable=False)  # school, hostel, hospital, vendor, student_exception
     recipient_name = Column(String, nullable=False)
-    amount_disbursed = Column(Float, nullable=False)
+    amount_disbursed = Column(Numeric(12, 2), nullable=False)
     payment_reference = Column(String, nullable=False)
-    evidence_file = Column(String, nullable=True)
+    evidence_file = Column(String, nullable=True)  # legacy URL; do not expose directly
+    evidence_storage_key = Column(String, nullable=True)
+    evidence_storage_resource_type = Column(String, nullable=True)
+    evidence_storage_format = Column(String, nullable=True)
+    evidence_storage_version = Column(Integer, nullable=True)
     disbursement_status = Column(String, default="disbursed")  # pending, disbursed, failed
     disbursement_notes = Column(Text, nullable=True)
     disbursed_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -220,6 +250,10 @@ class Disbursement(Base):
     # Relationships
     request = relationship("FundraisingRequest", back_populates="disbursements")
     admin = relationship("Administrator", back_populates="disbursements")
+
+    @property
+    def evidence_access_available(self):
+        return bool(self.evidence_storage_key or self.evidence_file)
 
 
 class AdminInviteToken(Base):

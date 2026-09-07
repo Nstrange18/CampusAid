@@ -175,6 +175,7 @@ export const UploadDonationProof = () => {
                 <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-2xl p-6 text-center cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-950/20 hover:bg-blue-50/10 flex flex-col items-center justify-center space-y-2 relative">
                   <input
                     type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
                     onChange={handleFileChange}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                     required

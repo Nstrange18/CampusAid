@@ -113,20 +113,27 @@ def seed_db():
     # Request 1 (Pending review by Admin)
     request1 = models.FundraisingRequest(
         student_id=student1_profile.student_id,
-        title="Final Semester Tuition Fee Support",
-        description="I am a final year Computer Science student who is currently at risk of dropping out due to unpaid tuition fees of 120,000 NGN. My family is experiencing severe financial hardship, and my course adviser recommended I apply.",
-        amount_needed=120000.0,
+        title="Screen Reader and Accessible Laptop Support",
+        description="I need compatible assistive technology to access course materials and complete programming assignments independently.",
+        amount_needed=420000.0,
         amount_raised=0.0,
-        purpose="Tuition Fees",
+        purpose="Assistive Technology",
         status="pending",
-        reason_for_request="Parent laid off due to company downsizing, unable to pay final semester fee invoice.",
+        reason_for_request="My current device does not support the screen-reader and development tools required for coursework.",
         urgency_level="high",
         student_bank_name="Campus Trust Bank",
         student_account_name="John Doe",
         student_account_number="2081234567",
-        parent_or_guardian_occupation="Unemployed (formerly Civil Servant)",
-        previous_support_received="no",
-        supporting_statement="Thank you for considering my request. Supporting me will allow me to graduate and support my family."
+        supporting_statement="This equipment will let me access course materials and complete assignments independently.",
+        support_need_description="A screen-reader-compatible laptop, licensed accessibility software, and setup support.",
+        functional_impact="A visual impairment makes inaccessible course documents and shared laboratory computers difficult to use.",
+        requested_support_type="Assistive technology",
+        public_story="This campaign will provide accessible study technology that supports independent learning and participation.",
+        public_display_preference="first_name_initial",
+        public_consent=True,
+        public_consent_at=datetime.datetime.utcnow(),
+        application_status="submitted",
+        campaign_status="unpublished"
     )
     db.add(request1)
     db.commit()
@@ -135,7 +142,7 @@ def seed_db():
     # Documents for Request 1
     doc1 = models.VerificationDocument(
         request_id=request1.request_id,
-        document_type="school_fee_invoice",
+        document_type="assistive_device_quote",
         file_path="/uploads/sample_invoice.pdf"
     )
     doc2 = models.VerificationDocument(
@@ -150,21 +157,28 @@ def seed_db():
     # Request 2 (Already Approved -> Active Campaign)
     request2 = models.FundraisingRequest(
         student_id=student2_profile.student_id,
-        title="Engineering Textbook and Accommodation Fund",
-        description="I need assistance to purchase required textbooks for my core engineering courses and to clear my pending hostel accommodation fees. The total cost is 75,000 NGN.",
-        amount_needed=75000.0,
+        title="Mobility Support for Engineering Student",
+        description="I need a suitable mobility aid and accessible transport support for laboratories and lectures across campus.",
+        amount_needed=350000.0,
         amount_raised=0.0,
-        purpose="Books & Accommodation",
+        purpose="Mobility Support",
         status="approved",
-        reason_for_request="Orphaned student relying on part-time tutoring jobs which do not cover books and accommodation bills.",
+        reason_for_request="My current mobility aid is no longer suitable for moving safely between lecture halls and laboratories.",
         urgency_level="medium",
         student_bank_name="Access Bank",
         student_account_name="Jane Smith",
         student_account_number="0098765432",
-        parent_or_guardian_occupation="Deceased",
-        previous_support_received="yes",
-        supporting_statement="Completing my studies is my path to becoming self-sufficient. This scholarship will ensure I have a safe roof and the necessary materials.",
-        admin_decision_reason="Verified orphan status, academic transcripts are outstanding, requested amount is minimal and reasonable."
+        supporting_statement="Reliable mobility support will help me attend laboratories and lectures consistently.",
+        support_need_description="A fitted mobility aid plus accessible campus transport support.",
+        functional_impact="A lower-limb mobility disability limits safe travel across campus and access to engineering laboratories.",
+        requested_support_type="Mobility support",
+        public_story="This campaign will fund mobility support that enables consistent access to lectures and practical laboratories.",
+        public_display_preference="anonymous",
+        public_consent=True,
+        public_consent_at=datetime.datetime.utcnow(),
+        application_status="approved",
+        campaign_status="active",
+        admin_decision_reason="Eligibility, support need, cost, consent, and an accepted evidence pathway were verified."
     )
     db.add(request2)
     db.commit()
@@ -178,7 +192,10 @@ def seed_db():
         matric_number_confirmed=True,
         department_faculty_confirmed=True,
         documents_reviewed=True,
-        financial_need_confirmed=True,
+        financial_need_confirmed=False,
+        disability_evidence_confirmed=True,
+        support_need_confirmed=True,
+        evidence_pathway="university_support_office",
         requested_amount_reasonable=True,
         duplicate_support_checked=True,
         decision_recorded=True
@@ -189,7 +206,7 @@ def seed_db():
     # Documents for Request 2
     doc3 = models.VerificationDocument(
         request_id=request2.request_id,
-        document_type="accommodation_bill",
+        document_type="university_support_office",
         file_path="/uploads/sample_hostel.png"
     )
     db.add(doc3)

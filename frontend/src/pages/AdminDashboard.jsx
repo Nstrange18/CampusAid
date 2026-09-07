@@ -49,7 +49,7 @@ export const AdminDashboard = () => {
       const activeCampaigns = await api.get("/campaigns");
       if (activeCampaigns.length > 0) {
         try {
-          const approved = activeCampaigns.find(c => c.status === "approved" || c.status === "completed");
+          const approved = activeCampaigns.find(c => c.status === "active" || c.status === "funded");
           if (approved) {
             const details = await api.get(`/campaigns/${approved.request_id}`);
             if (details.admin_payment_accounts && details.admin_payment_accounts.length > 0) {
@@ -197,6 +197,15 @@ export const AdminDashboard = () => {
     }
   };
 
+  const viewDisbursementEvidence = async (disbursementId) => {
+    try {
+      const access = await api.get(`/admin/disbursements/${disbursementId}/evidence/access`);
+      window.open(access.url.startsWith('http') ? access.url : `${API_URL}${access.url}`, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      toast.error("Unable to open disbursement evidence: " + err.message);
+    }
+  };
+
   const getRecipientTypeLabel = (type) => {
     switch (type) {
       case 'school': return 'Tuition Fund (School Direct)';
@@ -220,7 +229,7 @@ export const AdminDashboard = () => {
   const { stats, recent_requests } = data;
 
   // Filter completed or reached target campaigns for logging dropdown
-  const reachedCampaigns = allCampaigns.filter(c => c.status === "completed" || c.amount_raised >= c.amount_needed);
+  const reachedCampaigns = allCampaigns.filter(c => c.campaign_status === "funded" || c.campaign_status === "closed" || c.amount_raised >= c.amount_needed);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -322,12 +331,12 @@ export const AdminDashboard = () => {
                     </div>
                     <div className="text-right space-y-1.5 shrink-0">
                       <span className={`px-2 py-0.5 text-[9px] font-bold rounded uppercase tracking-wider ${
-                        r.status === 'approved' ? 'bg-emerald-50 dark:bg-emerald-955/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30' :
-                        r.status === 'rejected' ? 'bg-red-50 dark:bg-red-955/20 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/30' :
-                        r.status === 'completed' ? 'bg-blue-50 dark:bg-blue-955/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30' :
+                        r.application_status === 'approved' && r.campaign_status === 'active' ? 'bg-emerald-50 dark:bg-emerald-955/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30' :
+                        r.application_status === 'rejected' ? 'bg-red-50 dark:bg-red-955/20 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/30' :
+                        ['funded', 'closed'].includes(r.campaign_status) ? 'bg-blue-50 dark:bg-blue-955/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30' :
                         'bg-amber-50 dark:bg-amber-955/20 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30'
                       }`}>
-                        {r.status}
+                        {r.application_status === 'approved' ? r.campaign_status : r.application_status}
                       </span>
                       <p className="font-bold text-slate-800 dark:text-slate-100 text-[11px]">₦{r.amount_needed.toLocaleString()}</p>
                     </div>
@@ -441,13 +450,13 @@ export const AdminDashboard = () => {
               </h4>
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Manage fund disbursements directly to schools, accommodation hostels, or service vendors</p>
             </div>
-            <button
+            {user?.is_super_admin && <button
               onClick={() => setShowLogModal(true)}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               Log Disbursement
-            </button>
+            </button>}
           </div>
 
           {loadingDisbursements ? (
@@ -496,20 +505,20 @@ export const AdminDashboard = () => {
                           <td className="p-4 font-mono text-slate-500 dark:text-slate-400">{dis.payment_reference}</td>
                           <td className="p-4 text-slate-500 dark:text-slate-400">{new Date(dis.disbursed_at).toLocaleDateString()}</td>
                           <td className="p-4 text-right">
-                            {dis.evidence_file ? (
-                              <a
-                                href={`${API_URL}${dis.evidence_file}`}
-                                target="_blank"
-                                rel="noreferrer"
+                            {dis.evidence_access_available ? (
+                              <button
+                                type="button"
+                                onClick={() => viewDisbursementEvidence(dis.disbursement_id)}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 rounded-lg font-bold hover:bg-blue-100/50 dark:hover:bg-blue-800/60 transition-all"
                               >
                                 View File
                                 <ExternalLink className="h-3 w-3" />
-                              </a>
-                            ) : (
+                              </button>
+                            ) : user?.is_super_admin ? (
                               <div className="relative inline-block">
                                 <input
                                   type="file"
+                                  accept=".pdf,.png,.jpg,.jpeg"
                                   id={`file-upload-${dis.disbursement_id}`}
                                   onChange={(e) => {
                                     if (e.target.files && e.target.files.length > 0) {
@@ -523,6 +532,8 @@ export const AdminDashboard = () => {
                                   Attach Receipt
                                 </button>
                               </div>
+                            ) : (
+                              <span className="text-[10px] text-slate-400">Super admin only</span>
                             )}
                           </td>
                         </tr>
@@ -669,6 +680,7 @@ export const AdminDashboard = () => {
                   <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Upload Receipt Evidence (Optional)</label>
                   <input
                     type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
                     onChange={(e) => {
                       if (e.target.files && e.target.files.length > 0) {
                         setEvidenceFile(e.target.files[0]);

@@ -15,7 +15,9 @@ export const AdminChecklist = () => {
   const [matricNumber, setMatricNumber] = useState(false);
   const [deptFaculty, setDeptFaculty] = useState(false);
   const [docsReviewed, setDocsReviewed] = useState(false);
-  const [needConfirmed, setNeedConfirmed] = useState(false);
+  const [disabilityEvidence, setDisabilityEvidence] = useState(false);
+  const [supportNeed, setSupportNeed] = useState(false);
+  const [evidencePathway, setEvidencePathway] = useState("");
   const [amountReasonable, setAmountReasonable] = useState(false);
   const [duplicateChecked, setDuplicateChecked] = useState(false);
 
@@ -41,7 +43,9 @@ export const AdminChecklist = () => {
           setMatricNumber(checklist.matric_number_confirmed);
           setDeptFaculty(checklist.department_faculty_confirmed);
           setDocsReviewed(checklist.documents_reviewed);
-          setNeedConfirmed(checklist.financial_need_confirmed);
+          setDisabilityEvidence(checklist.disability_evidence_confirmed);
+          setSupportNeed(checklist.support_need_confirmed);
+          setEvidencePathway(checklist.evidence_pathway || "");
           setAmountReasonable(checklist.requested_amount_reasonable);
           setDuplicateChecked(checklist.duplicate_support_checked);
           setChecklistExists(true);
@@ -69,9 +73,9 @@ export const AdminChecklist = () => {
     }
 
     // If approving, make sure ALL checklist items are checked
-    const allChecked = studentIdentity && matricNumber && deptFaculty && docsReviewed && needConfirmed && amountReasonable && duplicateChecked;
+    const allChecked = studentIdentity && matricNumber && deptFaculty && docsReviewed && disabilityEvidence && supportNeed && evidencePathway && amountReasonable && duplicateChecked;
     if (decision === "approve" && !allChecked) {
-      setError("Cannot approve application: All indigent verification checklist items must be reviewed and confirmed first.");
+      setError("Cannot approve application: Complete the disability-support checks and select an accepted evidence pathway.");
       return;
     }
 
@@ -82,7 +86,10 @@ export const AdminChecklist = () => {
         matric_number_confirmed: matricNumber,
         department_faculty_confirmed: deptFaculty,
         documents_reviewed: docsReviewed,
-        financial_need_confirmed: needConfirmed,
+        financial_need_confirmed: false,
+        disability_evidence_confirmed: disabilityEvidence,
+        support_need_confirmed: supportNeed,
+        evidence_pathway: evidencePathway || null,
         requested_amount_reasonable: amountReasonable,
         duplicate_support_checked: duplicateChecked,
         decision_recorded: true
@@ -139,8 +146,9 @@ export const AdminChecklist = () => {
     { id: "identity", label: "Student Identity Confirmed", description: "Verify student full name and profile matches registration record", state: studentIdentity, setter: setStudentIdentity },
     { id: "matric", label: "Matric Number Confirmed", description: "Cross check matric number syntax with university database formats", state: matricNumber, setter: setMatricNumber },
     { id: "dept", label: "Faculty / Department Confirmed", description: "Verify Course/Level parameters correspond to registration standing", state: deptFaculty, setter: setDeptFaculty },
-    { id: "docs", label: "Uploaded Documents Reviewed", description: "Read through invoice details, accommodation statements or adviser letters", state: docsReviewed, setter: setDocsReviewed },
-    { id: "need", label: "Financial Need Confirmed", description: "Ensure invoice costs are valid and the family situation warrants support", state: needConfirmed, setter: setNeedConfirmed },
+    { id: "docs", label: "Uploaded Evidence Reviewed", description: "Review only the evidence needed for the selected verification pathway", state: docsReviewed, setter: setDocsReviewed },
+    { id: "evidence", label: "Disability Evidence Confirmed", description: "Confirm at least one accepted evidence pathway; do not require every possible document type", state: disabilityEvidence, setter: setDisabilityEvidence },
+    { id: "need", label: "Disability-related Support Need Confirmed", description: "Confirm that the requested support addresses the documented functional barrier", state: supportNeed, setter: setSupportNeed },
     { id: "amount", label: "Requested Amount is Reasonable", description: "Confirm the requested target is minimal, accurate, and direct-to-purpose", state: amountReasonable, setter: setAmountReasonable },
     { id: "duplicate", label: "Duplicate Support Checked", description: "Check logs to prevent double support disbursements this semester", state: duplicateChecked, setter: setDuplicateChecked }
   ];
@@ -180,10 +188,21 @@ export const AdminChecklist = () => {
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm lg:col-span-2 space-y-4 transition-colors duration-300">
           <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
             <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-450" />
-            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Indigent Checklist Items</h4>
+            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Disability Support Verification</h4>
           </div>
 
           <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Accepted Evidence Pathway</label>
+              <select value={evidencePathway} onChange={(e) => setEvidencePathway(e.target.value)} className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs dark:text-slate-100">
+                <option value="">Select one pathway</option>
+                <option value="university_support_office">University disability/support office confirmation</option>
+                <option value="medical_professional">Medical or rehabilitation professional report</option>
+                <option value="government_certificate">Government disability certificate</option>
+                <option value="accessibility_assessment">Accessibility or assistive-needs assessment</option>
+                <option value="approved_alternative">Administrator-approved alternative evidence</option>
+              </select>
+            </div>
             {checklistItems.map((item) => (
               <div 
                 key={item.id} 

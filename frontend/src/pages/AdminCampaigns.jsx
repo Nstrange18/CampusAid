@@ -36,14 +36,16 @@ export const AdminCampaigns = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'approved':
+      case 'active':
         return <span className="px-2 py-0.5 text-[9px] font-bold bg-emerald-50 dark:bg-emerald-955/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 rounded uppercase">Active</span>;
-      case 'completed':
-        return <span className="px-2 py-0.5 text-[9px] font-bold bg-blue-50 dark:bg-blue-955/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 rounded uppercase">Completed</span>;
-      case 'rejected':
-        return <span className="px-2 py-0.5 text-[9px] font-bold bg-red-50 dark:bg-red-955/20 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded uppercase">Rejected</span>;
-      case 'pending':
-        return <span className="px-2 py-0.5 text-[9px] font-bold bg-amber-50 dark:bg-amber-955/20 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30 rounded uppercase">Pending</span>;
+      case 'funded':
+        return <span className="px-2 py-0.5 text-[9px] font-bold bg-blue-50 dark:bg-blue-955/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 rounded uppercase">Funded</span>;
+      case 'closed':
+        return <span className="px-2 py-0.5 text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded uppercase">Closed</span>;
+      case 'paused':
+        return <span className="px-2 py-0.5 text-[9px] font-bold bg-amber-50 dark:bg-amber-955/20 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30 rounded uppercase">Paused</span>;
+      case 'cancelled':
+        return <span className="px-2 py-0.5 text-[9px] font-bold bg-red-50 dark:bg-red-955/20 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded uppercase">Cancelled</span>;
       default:
         return <span className="px-2 py-0.5 text-[9px] font-bold bg-slate-50 dark:bg-slate-950/40 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-800 rounded uppercase">{status}</span>;
     }
@@ -124,17 +126,19 @@ export const AdminCampaigns = () => {
                             <span className="font-bold text-slate-700 dark:text-slate-300 shrink-0">{percent}%</span>
                           </div>
                         </td>
-                        <td className="p-4">{getStatusBadge(c.status)}</td>
+                        <td className="p-4">{getStatusBadge(c.campaign_status)}</td>
                         <td className="p-4 text-right">
                           <select
-                            value={c.status}
+                            value={c.campaign_status}
                             onChange={(e) => handleStatusChange(c.request_id, e.target.value)}
                             className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-700 dark:text-slate-100 rounded-lg text-xs font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all"
                           >
-                            <option value="pending" className="dark:bg-slate-900">Pending</option>
-                            <option value="approved" className="dark:bg-slate-900">Active/Approved</option>
-                            <option value="rejected" className="dark:bg-slate-900">Rejected</option>
-                            <option value="completed" className="dark:bg-slate-900">Completed</option>
+                            <option value="unpublished" className="dark:bg-slate-900">Unpublished</option>
+                            <option value="active" className="dark:bg-slate-900">Active</option>
+                            <option value="paused" className="dark:bg-slate-900">Paused</option>
+                            <option value="funded" className="dark:bg-slate-900">Funded</option>
+                            <option value="closed" className="dark:bg-slate-900">Closed</option>
+                            <option value="cancelled" className="dark:bg-slate-900">Cancelled</option>
                           </select>
                         </td>
                       </tr>
@@ -156,7 +160,7 @@ export const AdminCampaigns = () => {
                       <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs leading-snug line-clamp-2">{c.title}</h4>
                       <p className="text-[9px] text-slate-400 dark:text-slate-500">Student: {c.student?.user?.full_name}</p>
                     </div>
-                    {getStatusBadge(c.status)}
+                    {getStatusBadge(c.campaign_status)}
                   </div>
 
                   <div className="h-[1px] bg-slate-100 dark:bg-slate-800" />
@@ -175,14 +179,16 @@ export const AdminCampaigns = () => {
                   <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
                     <span className="text-[10px] text-slate-455 dark:text-slate-500 flex items-center gap-1"><Edit className="h-3.5 w-3.5" /> Adjust Status:</span>
                     <select
-                      value={c.status}
+                      value={c.campaign_status}
                       onChange={(e) => handleStatusChange(c.request_id, e.target.value)}
                       className="px-2.5 py-1 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 transition-all cursor-pointer"
                     >
-                      <option value="pending" className="dark:bg-slate-900">Pending</option>
-                      <option value="approved" className="dark:bg-slate-900">Active</option>
-                      <option value="rejected" className="dark:bg-slate-900">Rejected</option>
-                      <option value="completed" className="dark:bg-slate-900">Completed</option>
+                      <option value="unpublished" className="dark:bg-slate-900">Unpublished</option>
+                      <option value="active" className="dark:bg-slate-900">Active</option>
+                      <option value="paused" className="dark:bg-slate-900">Paused</option>
+                      <option value="funded" className="dark:bg-slate-900">Funded</option>
+                      <option value="closed" className="dark:bg-slate-900">Closed</option>
+                      <option value="cancelled" className="dark:bg-slate-900">Cancelled</option>
                     </select>
                   </div>
                 </div>

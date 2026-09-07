@@ -119,7 +119,7 @@ export const DonorDashboard = () => {
             <HeartHandshake className="h-10 w-10 text-blue-400" />
             <h4 className="font-bold text-base">Make a Difference Today</h4>
             <p className="text-xs text-blue-200 leading-relaxed">
-              Find verified indigent students seeking textbook help, tuition support, or medical welfare and back their campaign.
+              Support verified disability-related needs such as assistive technology, accessible learning materials, mobility, and accommodation.
             </p>
           </div>
           <Link

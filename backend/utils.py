@@ -35,11 +35,11 @@ def validate_upload_file(file: UploadFile):
     ext = os.path.splitext(filename)[1].lower()
     
     # 1. Extension validation
-    allowed_extensions = {".png", ".jpg", ".jpeg", ".pdf", ".doc", ".docx"}
+    allowed_extensions = {".png", ".jpg", ".jpeg", ".pdf"}
     if ext not in allowed_extensions:
         raise HTTPException(
             status_code=400,
-            detail=f"File extension {ext} not allowed. Supported formats: PNG, JPG, JPEG, PDF, DOC, DOCX."
+            detail=f"File extension {ext} not allowed. Supported formats: PNG, JPG, JPEG, PDF."
         )
 
     # 2. Content-Type/MIME type validation
@@ -48,8 +48,6 @@ def validate_upload_file(file: UploadFile):
         "image/jpeg",
         "image/jpg",
         "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     }
     if file.content_type not in allowed_content_types:
         raise HTTPException(
@@ -65,4 +63,15 @@ def validate_upload_file(file: UploadFile):
             status_code=400,
             detail="File size exceeds the 5MB limit."
         )
+    if not content:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+    signatures = {
+        ".png": (b"\x89PNG\r\n\x1a\n",),
+        ".jpg": (b"\xff\xd8\xff",),
+        ".jpeg": (b"\xff\xd8\xff",),
+        ".pdf": (b"%PDF-",),
+    }
+    if not any(content.startswith(signature) for signature in signatures[ext]):
+        raise HTTPException(status_code=400, detail="File contents do not match the selected file type.")
     file.file.seek(0)

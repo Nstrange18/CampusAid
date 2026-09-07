@@ -13,8 +13,20 @@ export const UploadDocs = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const [documentType, setDocumentType] = useState("school_fee_invoice");
+  const [documentType, setDocumentType] = useState("university_support_office");
   const [selectedFile, setSelectedFile] = useState(null);
+
+  const openPrivateDocument = async (documentId) => {
+    try {
+      const access = await api.get(`/students/documents/${documentId}/access`);
+      const url = access.url.startsWith('http') ? access.url : `${API_URL}${access.url}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      const message = err.message || "Unable to open this private document";
+      setError(message);
+      toast.error(message);
+    }
+  };
 
   const fetchRequest = async () => {
     try {
@@ -73,13 +85,14 @@ export const UploadDocs = () => {
 
   const getDocLabel = (type) => {
     switch (type) {
-      case 'school_fee_invoice': return 'School Fee Invoice';
       case 'student_id_card': return 'Student ID Card';
-      case 'admission_letter': return 'Admission Letter';
-      case 'fee_balance_evidence': return 'Fee Balance Evidence';
-      case 'accommodation_bill': return 'Accommodation Bill';
-      case 'medical_bill': return 'Medical Bill';
-      case 'recommendation_letter': return 'Recommendation Letter';
+      case 'university_support_office': return 'University Support Office Confirmation';
+      case 'medical_professional_report': return 'Medical or Rehabilitation Professional Report';
+      case 'government_disability_certificate': return 'Government Disability Certificate';
+      case 'accessibility_assessment': return 'Accessibility Assessment';
+      case 'assistive_device_quote': return 'Assistive Device Quote';
+      case 'support_cost_quote': return 'Support Cost Quote';
+      case 'approved_alternative': return 'Approved Alternative Evidence';
       default: return 'Supporting Document';
     }
   };
@@ -150,14 +163,14 @@ export const UploadDocs = () => {
                   className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:text-slate-100 dark:focus:border-blue-500 transition-all cursor-pointer"
                   required
                 >
-                  <option value="school_fee_invoice">School Fee Invoice</option>
                   <option value="student_id_card">Student ID Card</option>
-                  <option value="admission_letter">Admission/Offer Letter</option>
-                  <option value="fee_balance_evidence">Fee Balance Evidence</option>
-                  <option value="accommodation_bill">Accommodation/Hostel Bill</option>
-                  <option value="medical_bill">Medical Bill (If Applicable)</option>
-                  <option value="recommendation_letter">Adviser/HOD Recommendation</option>
-                  <option value="other">Other Supporting Evidence</option>
+                  <option value="university_support_office">University Disability/Support Office Confirmation</option>
+                  <option value="medical_professional_report">Medical or Rehabilitation Professional Report</option>
+                  <option value="government_disability_certificate">Government Disability Certificate</option>
+                  <option value="accessibility_assessment">Accessibility or Assistive-needs Assessment</option>
+                  <option value="assistive_device_quote">Assistive Device Quote</option>
+                  <option value="support_cost_quote">Support Cost Quote</option>
+                  <option value="approved_alternative">Administrator-approved Alternative Evidence</option>
                 </select>
               </div>
 
@@ -166,6 +179,7 @@ export const UploadDocs = () => {
                 <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-2xl p-6 text-center cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-950/20 hover:bg-blue-50/10 flex flex-col items-center justify-center space-y-2 relative">
                   <input
                     type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
                     id="file-input"
                     onChange={handleFileChange}
                     className="absolute inset-0 opacity-0 cursor-pointer"
@@ -175,7 +189,7 @@ export const UploadDocs = () => {
                   <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate w-full max-w-[200px] px-2">
                     {selectedFile ? selectedFile.name : "Drag & Drop or Click to browse"}
                   </p>
-                  <p className="text-[9px] text-slate-400 dark:text-slate-500">PDF, PNG, JPG or DOCX up to 5MB</p>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500">PDF, PNG, JPG or JPEG up to 5MB</p>
                 </div>
               </div>
 
@@ -234,15 +248,14 @@ export const UploadDocs = () => {
                       <td className="p-3 text-slate-800 dark:text-slate-100 font-semibold">{getDocLabel(doc.document_type)}</td>
                       <td className="p-3 text-slate-500 dark:text-slate-400">{new Date(doc.upload_date).toLocaleDateString()}</td>
                       <td className="p-3 text-right">
-                        <a
-                          href={`${API_URL}${doc.file_path}`}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => openPrivateDocument(doc.document_id)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 rounded-lg font-bold hover:bg-blue-100/50 dark:hover:bg-blue-800/60 transition-all"
                         >
                           View File
                           <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
+                        </button>
                       </td>
                     </tr>
                   ))}
