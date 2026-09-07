@@ -22,6 +22,15 @@ export const DonationHistory = () => {
     fetchDonations();
   }, []);
 
+  const viewProof = async (donationId) => {
+    try {
+      const access = await api.get(`/donors/donations/${donationId}/proof/access`);
+      window.open(access.url.startsWith('http') ? access.url : `${API_URL}${access.url}`, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      console.error("Unable to open donation proof:", err);
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'verified':
@@ -121,16 +130,15 @@ export const DonationHistory = () => {
                       <td className="p-4 text-slate-500 dark:text-slate-400">{new Date(d.donation_date).toLocaleDateString()}</td>
                       <td className="p-4">{getStatusBadge(d.verification_status)}</td>
                       <td className="p-4 text-right">
-                        {d.proof_file ? (
-                          <a
-                            href={`${API_URL}${d.proof_file}`}
-                            target="_blank"
-                            rel="noreferrer"
+                        {d.proof_access_available ? (
+                          <button
+                            type="button"
+                            onClick={() => viewProof(d.donation_id)}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 rounded-lg hover:bg-blue-100/50 dark:hover:bg-blue-800/60 transition-all font-bold"
                           >
                             View File
                             <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
+                          </button>
                         ) : (
                           <span className="text-[10px] text-slate-400 italic">No File</span>
                         )}
@@ -161,16 +169,15 @@ export const DonationHistory = () => {
                   <p className="flex items-center gap-1"><Calendar className="h-3 w-3 text-slate-400 dark:text-slate-500" /> {new Date(d.donation_date).toLocaleDateString()}</p>
                 </div>
 
-                {d.proof_file && (
-                  <a
-                    href={`${API_URL}${d.proof_file}`}
-                    target="_blank"
-                    rel="noreferrer"
+                {d.proof_access_available && (
+                  <button
+                    type="button"
+                    onClick={() => viewProof(d.donation_id)}
                     className="w-full flex items-center justify-center gap-1.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200/80 dark:border-slate-700 text-xs font-bold transition-all"
                   >
                     View Attached Receipt
                     <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
+                  </button>
                 )}
               </div>
             ))}

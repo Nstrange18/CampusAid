@@ -46,6 +46,15 @@ export const AdminDonations = () => {
     }
   };
 
+  const viewProof = async (donationId) => {
+    try {
+      const access = await api.get(`/admin/donations/${donationId}/proof/access`);
+      window.open(access.url.startsWith('http') ? access.url : `${API_URL}${access.url}`, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      toast.error("Unable to open receipt: " + err.message);
+    }
+  };
+
   const handleDeclineSubmit = async (e) => {
     e.preventDefault();
     if (!rejectionReason) return;
@@ -113,15 +122,16 @@ export const AdminDonations = () => {
                       <td className="p-4 font-mono font-semibold text-slate-600 dark:text-slate-300">{d.transaction_reference}</td>
                       <td className="p-4 font-extrabold text-emerald-700 dark:text-emerald-400">₦{d.amount.toLocaleString()}</td>
                       <td className="p-4">
-                        <a
-                          href={`${API_URL}${d.proof_file}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 rounded-lg hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-all font-bold"
-                        >
-                          View Receipt
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
+                        {d.proof_access_available ? (
+                          <button
+                            type="button"
+                            onClick={() => viewProof(d.donation_id)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 rounded-lg hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-all font-bold"
+                          >
+                            View Receipt
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </button>
+                        ) : <span className="text-slate-400">No receipt</span>}
                       </td>
                       <td className="p-4 text-right space-x-2">
                         <button
@@ -162,16 +172,15 @@ export const AdminDonations = () => {
                   <p className="font-mono"><span className="text-slate-400 dark:text-slate-500">Ref:</span> {d.transaction_reference}</p>
                 </div>
 
-                {d.proof_file && (
-                  <a
-                    href={`${API_URL}${d.proof_file}`}
-                    target="_blank"
-                    rel="noreferrer"
+                {d.proof_access_available && (
+                  <button
+                    type="button"
+                    onClick={() => viewProof(d.donation_id)}
                     className="w-full flex items-center justify-center gap-1.5 py-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg border border-slate-200/80 dark:border-slate-800 text-xs font-bold transition-all"
                   >
                     View Receipt Image
                     <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
+                  </button>
                 )}
 
                 <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">

@@ -9,7 +9,11 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
 from ..utils import validate_upload_file, rate_limit_upload
-from ..cloudinary_helper import upload_to_cloudinary
+from ..cloudinary_helper import (
+    upload_private_document,
+    create_private_download_url,
+    create_private_download_url_from_fields,
+)
 
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -73,9 +77,9 @@ def get_admin_dashboard(current_user: models.User = Depends(auth.get_current_adm
     get_admin_record(current_user, db)
 
     total_requests = db.query(models.FundraisingRequest).count()
-    pending_requests = db.query(models.FundraisingRequest).filter(models.FundraisingRequest.status == "pending").count()
-    approved_requests = db.query(models.FundraisingRequest).filter(models.FundraisingRequest.status == "approved").count()
-    completed_requests = db.query(models.FundraisingRequest).filter(models.FundraisingRequest.status == "completed").count()
+    pending_requests = db.query(models.FundraisingRequest).filter(models.FundraisingRequest.application_status.in_(["submitted", "under_review"])).count()
+    approved_requests = db.query(models.FundraisingRequest).filter(models.FundraisingRequest.application_status == "approved").count()
+    completed_requests = db.query(models.FundraisingRequest).filter(models.FundraisingRequest.campaign_status == "closed").count()
 
     total_donations_value = db.query(models.DonationRecord).filter(models.DonationRecord.verification_status == "verified")
     total_donations_sum = sum([d.amount for d in total_donations_value])
@@ -107,6 +111,8 @@ def get_admin_dashboard(current_user: models.User = Depends(auth.get_current_adm
                 "title": r.title,
                 "amount_needed": r.amount_needed,
                 "status": r.status,
+                "application_status": r.application_status,
+                "campaign_status": r.campaign_status,
                 "date_submitted": r.date_submitted
             } for r in recent_requests
         ],
@@ -124,7 +130,7 @@ def get_admin_dashboard(current_user: models.User = Depends(auth.get_current_adm
 @router.get("/requests/pending", response_model=list[schemas.FundraisingRequestOut])
 def get_pending_requests(current_user: models.User = Depends(auth.get_current_admin), db: Session = Depends(get_db)):
     get_admin_record(current_user, db)
-    return db.query(models.FundraisingRequest).filter(models.FundraisingRequest.status == "pending").all()
+    return db.query(models.FundraisingRequest).filter(models.FundraisingRequest.application_status.in_(["submitted", "under_review"])).all()
 
 @router.get("/requests/{id}", response_model=schemas.FundraisingRequestOut)
 def get_request_by_id(id: int, current_user: models.User = Depends(auth.get_current_admin), db: Session = Depends(get_db)):
@@ -133,6 +139,27 @@ def get_request_by_id(id: int, current_user: models.User = Depends(auth.get_curr
     if not request:
         raise HTTPException(status_code=404, detail="Fundraising request not found")
     return request
+
+
+@router.get("/documents/{document_id}/access", response_model=schemas.PrivateDocumentAccessOut)
+def access_verification_document(
+    document_id: int,
+    current_user: models.User = Depends(auth.get_current_admin),
+    db: Session = Depends(get_db),
+):
+    get_admin_record(current_user, db)
+    document = db.query(models.VerificationDocument).filter(
+        models.VerificationDocument.document_id == document_id
+    ).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    log_admin_activity(db, current_user, "access_verification_document", "verification_document", document.document_id)
+    db.commit()
+    if not document.storage_key:
+        return {"url": document.file_path, "expires_at": datetime.datetime.now(datetime.timezone.utc)}
+    url, expires_at = create_private_download_url(document)
+    return {"url": url, "expires_at": datetime.datetime.fromtimestamp(expires_at, datetime.timezone.utc)}
 
 @router.post("/requests/{id}/verification-checklist", response_model=schemas.VerificationChecklistOut)
 def create_verification_checklist(
@@ -158,6 +185,9 @@ def create_verification_checklist(
         department_faculty_confirmed=checklist_in.department_faculty_confirmed,
         documents_reviewed=checklist_in.documents_reviewed,
         financial_need_confirmed=checklist_in.financial_need_confirmed,
+        disability_evidence_confirmed=checklist_in.disability_evidence_confirmed,
+        support_need_confirmed=checklist_in.support_need_confirmed,
+        evidence_pathway=checklist_in.evidence_pathway,
         requested_amount_reasonable=checklist_in.requested_amount_reasonable,
         duplicate_support_checked=checklist_in.duplicate_support_checked,
         decision_recorded=checklist_in.decision_recorded
@@ -185,6 +215,9 @@ def update_verification_checklist(
     checklist.department_faculty_confirmed = checklist_in.department_faculty_confirmed
     checklist.documents_reviewed = checklist_in.documents_reviewed
     checklist.financial_need_confirmed = checklist_in.financial_need_confirmed
+    checklist.disability_evidence_confirmed = checklist_in.disability_evidence_confirmed
+    checklist.support_need_confirmed = checklist_in.support_need_confirmed
+    checklist.evidence_pathway = checklist_in.evidence_pathway
     checklist.requested_amount_reasonable = checklist_in.requested_amount_reasonable
     checklist.duplicate_support_checked = checklist_in.duplicate_support_checked
     checklist.decision_recorded = checklist_in.decision_recorded
@@ -214,7 +247,7 @@ def approve_request(
     if not request:
         raise HTTPException(status_code=404, detail="Request not found")
 
-    if request.status != "pending":
+    if request.application_status not in ["submitted", "under_review", "changes_requested"]:
         raise HTTPException(status_code=400, detail="Request has already been reviewed")
 
     # A request should not be approved unless the admin verification checklist has been completed
@@ -231,7 +264,8 @@ def approve_request(
         checklist.matric_number_confirmed,
         checklist.department_faculty_confirmed,
         checklist.documents_reviewed,
-        checklist.financial_need_confirmed,
+        checklist.disability_evidence_confirmed,
+        checklist.support_need_confirmed,
         checklist.requested_amount_reasonable,
         checklist.duplicate_support_checked
     ])
@@ -241,9 +275,16 @@ def approve_request(
             detail="Cannot approve request: One or more critical checklist items have not been verified"
         )
 
+    if not checklist.evidence_pathway:
+        raise HTTPException(status_code=400, detail="Cannot approve request: An accepted disability evidence pathway is required")
+    if not request.public_consent or not request.public_story:
+        raise HTTPException(status_code=400, detail="Cannot publish campaign without student consent and an approved public story")
+
     reason = decision_data.get("reason", "Approved by Administrator")
 
     request.status = "approved"
+    request.application_status = "approved"
+    request.campaign_status = "active"
     request.admin_decision_reason = reason
     checklist.decision_recorded = True
 
@@ -272,7 +313,7 @@ def reject_request(
     if not request:
         raise HTTPException(status_code=404, detail="Request not found")
 
-    if request.status != "pending":
+    if request.application_status not in ["submitted", "under_review", "changes_requested"]:
         raise HTTPException(status_code=400, detail="Request has already been reviewed")
 
     reason = decision_data.get("reason")
@@ -280,6 +321,8 @@ def reject_request(
         raise HTTPException(status_code=400, detail="A rejection reason is required")
 
     request.status = "rejected"
+    request.application_status = "rejected"
+    request.campaign_status = "unpublished"
     request.admin_decision_reason = reason
 
     # Update checklist status if checklist exists
@@ -305,15 +348,44 @@ def get_pending_donations(current_user: models.User = Depends(auth.get_current_a
     get_admin_record(current_user, db)
     return db.query(models.DonationRecord).filter(models.DonationRecord.verification_status == "pending").all()
 
+
+@router.get("/donations/{id}/proof/access", response_model=schemas.PrivateDocumentAccessOut)
+def access_donation_proof(
+    id: int,
+    current_user: models.User = Depends(auth.get_current_admin),
+    db: Session = Depends(get_db),
+):
+    donation = db.query(models.DonationRecord).filter(models.DonationRecord.donation_id == id).first()
+    if not donation:
+        raise HTTPException(status_code=404, detail="Donation record not found")
+    if donation.proof_storage_key:
+        url, expires_at = create_private_download_url_from_fields(
+            donation.proof_storage_key,
+            donation.proof_storage_format,
+            donation.proof_storage_resource_type,
+        )
+    elif donation.proof_file:
+        url, expires_at = donation.proof_file, int(datetime.datetime.now(datetime.timezone.utc).timestamp()) + 300
+    else:
+        raise HTTPException(status_code=404, detail="Donation proof not found")
+
+    log_admin_activity(db, current_user, "access_donation_proof", "donation", donation.donation_id)
+    db.commit()
+    return {"url": url, "expires_at": datetime.datetime.fromtimestamp(expires_at, tz=datetime.timezone.utc)}
+
 @router.put("/donations/{id}/verify", response_model=schemas.DonationRecordOut)
 def verify_donation(id: int, current_user: models.User = Depends(auth.get_current_admin), db: Session = Depends(get_db)):
     admin = get_admin_record(current_user, db)
-    donation = db.query(models.DonationRecord).filter(models.DonationRecord.donation_id == id).first()
+    donation = db.query(models.DonationRecord).filter(
+        models.DonationRecord.donation_id == id
+    ).with_for_update().first()
     if not donation:
         raise HTTPException(status_code=404, detail="Donation record not found")
 
     if donation.verification_status != "pending":
         raise HTTPException(status_code=400, detail="Donation has already been processed")
+    if not donation.proof_storage_key and not donation.proof_file:
+        raise HTTPException(status_code=400, detail="Donation proof is required before verification")
 
     donation.verification_status = "verified"
     donation.verified_by = admin.admin_id
@@ -322,12 +394,19 @@ def verify_donation(id: int, current_user: models.User = Depends(auth.get_curren
     # Update fundraising request progress
     request = db.query(models.FundraisingRequest).filter(
         models.FundraisingRequest.request_id == donation.request_id
-    ).first()
+    ).with_for_update().first()
     
     if request:
+        remaining = request.amount_needed - request.amount_raised
+        if donation.amount > remaining:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Donation exceeds the remaining campaign target of ₦{remaining:,.2f}; reject or reconcile the record"
+            )
         request.amount_raised += donation.amount
         if request.amount_raised >= request.amount_needed:
-            request.status = "completed"
+            request.status = "completed"  # legacy compatibility mirror
+            request.campaign_status = "funded"
             
             # Notify student of completion
             student_notif = models.Notification(
@@ -379,6 +458,7 @@ def reject_donation(
         raise HTTPException(status_code=400, detail="A rejection reason is required")
 
     donation.verification_status = "rejected"
+    donation.rejection_reason = reason
     donation.verified_by = admin.admin_id
     donation.verified_at = datetime.datetime.utcnow()
 
@@ -414,10 +494,22 @@ def update_campaign_status(
         raise HTTPException(status_code=404, detail="Campaign/Request not found")
 
     new_status = status_data.get("status")
-    if new_status not in ["pending", "approved", "rejected", "completed"]:
-        raise HTTPException(status_code=400, detail="Invalid status parameter")
+    if new_status not in ["unpublished", "active", "paused", "funded", "closed", "cancelled"]:
+        raise HTTPException(status_code=400, detail="Invalid campaign status")
+    if new_status in ["active", "paused", "funded", "closed"] and request.application_status != "approved":
+        raise HTTPException(status_code=400, detail="Only approved applications can have a public campaign status")
+    if new_status == "active" and (not request.public_consent or not request.public_story):
+        raise HTTPException(status_code=400, detail="Campaign publication requires consent and an approved public story")
 
-    request.status = new_status
+    request.campaign_status = new_status
+    request.status = {
+        "unpublished": "pending",
+        "active": "approved",
+        "paused": "approved",
+        "funded": "completed",
+        "closed": "completed",
+        "cancelled": "rejected",
+    }[new_status]
     log_admin_activity(db, current_user, "update_campaign_status", "fundraising_request", request.request_id, new_status)
     db.commit()
     db.refresh(request)
@@ -661,7 +753,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 @router.post("/disbursements", response_model=schemas.DisbursementOut, status_code=status.HTTP_201_CREATED)
 def create_disbursement(
     disbursement_in: schemas.DisbursementCreate,
-    current_user: models.User = Depends(auth.get_current_admin),
+    current_user: models.User = Depends(auth.get_current_super_admin),
     db: Session = Depends(get_db)
 ):
     admin = get_admin_record(current_user, db)
@@ -673,11 +765,17 @@ def create_disbursement(
     if not request:
         raise HTTPException(status_code=404, detail="Fundraising request not found")
         
-    if request.status not in ["approved", "completed"]:
+    if request.application_status != "approved" or request.campaign_status not in ["active", "funded"]:
         raise HTTPException(
             status_code=400,
             detail="Cannot disburse funds for requests that are not approved or completed"
         )
+
+    existing_reference = db.query(models.Disbursement).filter(
+        models.Disbursement.payment_reference == disbursement_in.payment_reference
+    ).first()
+    if existing_reference:
+        raise HTTPException(status_code=400, detail="A disbursement with this payment reference already exists")
         
     # Ensure disbursement does not exceed total amount raised
     total_disbursed_so_far = sum([d.amount_disbursed for d in request.disbursements])
@@ -699,9 +797,10 @@ def create_disbursement(
     )
     db.add(new_disbursement)
     
-    # Mark status as completed if not already
-    if request.status != "completed":
-        request.status = "completed"
+    total_after_disbursement = total_disbursed_so_far + disbursement_in.amount_disbursed
+    if request.campaign_status == "funded" and total_after_disbursement >= request.amount_raised:
+        request.campaign_status = "closed"
+        request.status = "completed"  # legacy compatibility mirror
         
     # Notify student
     student_user_id = request.student.user.user_id
@@ -740,7 +839,7 @@ def get_campaign_disbursements(
 def upload_disbursement_evidence(
     id: int,
     file: UploadFile = File(...),
-    current_user: models.User = Depends(auth.get_current_admin),
+    current_user: models.User = Depends(auth.get_current_super_admin),
     db: Session = Depends(get_db)
 ):
     get_admin_record(current_user, db)
@@ -751,13 +850,40 @@ def upload_disbursement_evidence(
     # Validate file format and size
     validate_upload_file(file)
 
-    # Upload to Cloudinary
-    evidence_url = upload_to_cloudinary(file, folder="disbursement_evidence")
-    disbursement.evidence_file = evidence_url
+    asset = upload_private_document(file, folder="disbursement_evidence")
+    disbursement.evidence_storage_key = asset["storage_key"]
+    disbursement.evidence_storage_resource_type = asset["storage_resource_type"]
+    disbursement.evidence_storage_format = asset["storage_format"]
+    disbursement.evidence_storage_version = asset["storage_version"]
     log_admin_activity(db, current_user, "upload_disbursement_evidence", "disbursement", disbursement.disbursement_id)
     db.commit()
     db.refresh(disbursement)
     return disbursement
+
+
+@router.get("/disbursements/{id}/evidence/access", response_model=schemas.PrivateDocumentAccessOut)
+def access_disbursement_evidence(
+    id: int,
+    current_user: models.User = Depends(auth.get_current_admin),
+    db: Session = Depends(get_db),
+):
+    disbursement = db.query(models.Disbursement).filter(models.Disbursement.disbursement_id == id).first()
+    if not disbursement:
+        raise HTTPException(status_code=404, detail="Disbursement record not found")
+    if disbursement.evidence_storage_key:
+        url, expires_at = create_private_download_url_from_fields(
+            disbursement.evidence_storage_key,
+            disbursement.evidence_storage_format,
+            disbursement.evidence_storage_resource_type,
+        )
+    elif disbursement.evidence_file:
+        url, expires_at = disbursement.evidence_file, int(datetime.datetime.now(datetime.timezone.utc).timestamp()) + 300
+    else:
+        raise HTTPException(status_code=404, detail="Disbursement evidence not found")
+
+    log_admin_activity(db, current_user, "access_disbursement_evidence", "disbursement", disbursement.disbursement_id)
+    db.commit()
+    return {"url": url, "expires_at": datetime.datetime.fromtimestamp(expires_at, tz=datetime.timezone.utc)}
 
 
 # ──────────────────────────────────────────────────

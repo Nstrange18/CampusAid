@@ -12,7 +12,12 @@ from .database import get_db
 from . import models
 
 # Configuration
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "CAMPUSAID_SUPER_SECRET_SECURE_JWT_KEY_2026")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    if ENVIRONMENT == "production":
+        raise RuntimeError("JWT_SECRET_KEY is required in production")
+    SECRET_KEY = "development-only-campusaid-secret-change-before-deployment"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480  # 8 hours
 REFRESH_TOKEN_EXPIRE_DAYS = 30

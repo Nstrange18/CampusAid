@@ -25,7 +25,7 @@ export const AdminRequestsList = () => {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Pending Applications</h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Review indigent student claims and verify supporting evidence</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Review disability-support applications and their restricted evidence</p>
       </div>
 
       {loading ? (

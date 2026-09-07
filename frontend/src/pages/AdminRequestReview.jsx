@@ -10,6 +10,16 @@ export const AdminRequestReview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const openPrivateDocument = async (documentId) => {
+    try {
+      const access = await api.get(`/admin/documents/${documentId}/access`);
+      const url = access.url.startsWith('http') ? access.url : `${API_URL}${access.url}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      setError(err.message || "Unable to open this private document");
+    }
+  };
+
   useEffect(() => {
     const fetchRequest = async () => {
       try {
@@ -30,6 +40,13 @@ export const AdminRequestReview = () => {
       case 'student_id_card': return 'Student ID Card';
       case 'admission_letter': return 'Admission Letter';
       case 'fee_balance_evidence': return 'Fee Balance Evidence';
+      case 'university_support_office': return 'University Support Office Confirmation';
+      case 'medical_professional_report': return 'Medical or Rehabilitation Professional Report';
+      case 'government_disability_certificate': return 'Government Disability Certificate';
+      case 'accessibility_assessment': return 'Accessibility Assessment';
+      case 'assistive_device_quote': return 'Assistive Device Quote';
+      case 'support_cost_quote': return 'Support Cost Quote';
+      case 'approved_alternative': return 'Approved Alternative Evidence';
       case 'accommodation_bill': return 'Accommodation Bill';
       case 'medical_bill': return 'Medical Bill';
       case 'recommendation_letter': return 'Recommendation Letter';
@@ -108,8 +125,9 @@ export const AdminRequestReview = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{request.description}</p>
               
               <div className="p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <p><span className="font-bold text-slate-700 dark:text-slate-350">Financial Need Reason:</span> {request.reason_for_request}</p>
-                <p><span className="font-bold text-slate-700 dark:text-slate-350">Parent/Guardian Occupation:</span> {request.parent_or_guardian_occupation}</p>
+                <p><span className="font-bold text-slate-700 dark:text-slate-350">Support Needed:</span> {request.support_need_description || request.reason_for_request}</p>
+                <p><span className="font-bold text-slate-700 dark:text-slate-350">Functional Impact:</span> {request.functional_impact || 'Not provided in this legacy application'}</p>
+                <p><span className="font-bold text-slate-700 dark:text-slate-350">Requested Support Type:</span> {request.requested_support_type || request.purpose}</p>
                 <p><span className="font-bold text-slate-700 dark:text-slate-350">Received Support Previously:</span> <span className="capitalize font-semibold text-slate-800 dark:text-slate-200">{request.previous_support_received}</span></p>
                 <p className="italic pt-2">"<span className="font-medium">{request.supporting_statement}</span>"</p>
               </div>
@@ -180,15 +198,14 @@ export const AdminRequestReview = () => {
                       <p className="font-bold text-slate-800 dark:text-slate-100 text-[10px] truncate">{getDocLabel(doc.document_type)}</p>
                       <p className="text-[8px] text-slate-400 dark:text-slate-500">Date: {new Date(doc.upload_date).toLocaleDateString()}</p>
                     </div>
-                    <a
-                      href={`${API_URL}${doc.file_path}`}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => openPrivateDocument(doc.document_id)}
                       className="p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-blue-50 dark:hover:bg-blue-955/40 text-blue-600 dark:text-blue-400 rounded-lg hover:border-blue-200 dark:hover:border-blue-800 transition-all shrink-0"
                       title="Open in new tab"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
+                    </button>
                   </div>
                 ))}
               </div>

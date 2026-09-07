@@ -7,6 +7,10 @@ export const StudentDashboard = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const lifecycleStatus = (request) => request.application_status === 'approved'
+    ? request.campaign_status
+    : request.application_status;
+
   useEffect(() => {
     const fetchRequests = async () => {
       try {
@@ -23,35 +27,37 @@ export const StudentDashboard = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'pending': return <Clock className="h-5 w-5 text-amber-500" />;
-      case 'approved': return <CheckCircle className="h-5 w-5 text-emerald-500" />;
+      case 'submitted': return <Clock className="h-5 w-5 text-amber-500" />;
+      case 'active': return <CheckCircle className="h-5 w-5 text-emerald-500" />;
       case 'rejected': return <XCircle className="h-5 w-5 text-red-500" />;
-      case 'completed': return <HeartHandshake className="h-5 w-5 text-blue-500" />;
+      case 'funded': case 'closed': return <HeartHandshake className="h-5 w-5 text-blue-500" />;
       default: return <Clock className="h-5 w-5 text-slate-400" />;
     }
   };
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'pending':
+      case 'submitted':
         return <span className="px-2.5 py-1 text-xs font-semibold bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30 rounded-lg uppercase">Pending Review</span>;
-      case 'approved':
+      case 'active':
         return <span className="px-2.5 py-1 text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 rounded-lg uppercase">Approved Campaign</span>;
       case 'rejected':
         return <span className="px-2.5 py-1 text-xs font-semibold bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded-lg uppercase">Rejected</span>;
-      case 'completed':
-        return <span className="px-2.5 py-1 text-xs font-semibold bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 rounded-lg uppercase">Completed</span>;
+      case 'funded':
+        return <span className="px-2.5 py-1 text-xs font-semibold bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 rounded-lg uppercase">Funded</span>;
+      case 'closed':
+        return <span className="px-2.5 py-1 text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg uppercase">Closed</span>;
       default:
         return <span className="px-2.5 py-1 text-xs font-semibold bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg uppercase">{status}</span>;
     }
   };
 
-  const activeRequest = requests.find(r => r.status === 'pending' || r.status === 'approved');
+  const activeRequest = requests.find(r => ['submitted', 'under_review', 'changes_requested', 'approved'].includes(r.application_status) && !['closed', 'cancelled'].includes(r.campaign_status));
 
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Alert if pending and needs documents */}
-      {activeRequest && activeRequest.status === 'pending' && activeRequest.documents.length === 0 && (
+      {activeRequest && activeRequest.application_status === 'submitted' && activeRequest.documents.length === 0 && (
         <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 text-amber-800 dark:text-amber-300 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm transition-colors duration-300">
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
@@ -78,7 +84,7 @@ export const StudentDashboard = () => {
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2 transition-colors duration-300">
           <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">Active Fundings</p>
           <p className="text-3xl font-black text-slate-800 dark:text-slate-100">
-            {requests.filter(r => r.status === 'approved').length}
+            {requests.filter(r => r.campaign_status === 'active').length}
           </p>
         </div>
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2 transition-colors duration-300">
@@ -114,7 +120,7 @@ export const StudentDashboard = () => {
             <FileText className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto" />
             <div className="space-y-1">
               <h4 className="font-bold text-slate-700 dark:text-slate-300">No requests submitted yet</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-450">Submit a request with school fee invoice or accommodation bills to begin.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-450">Submit a disability-support request and one accepted evidence pathway to begin.</p>
             </div>
             <Link
               to="/student/requests/new"
@@ -132,14 +138,14 @@ export const StudentDashboard = () => {
                 <div key={r.request_id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                   <div className="flex gap-4 items-start">
                     <div className="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 rounded-xl text-blue-600 dark:text-blue-400 shrink-0 mt-0.5 transition-colors">
-                      {getStatusIcon(r.status)}
+                      {getStatusIcon(lifecycleStatus(r))}
                     </div>
                     <div className="space-y-1.5 min-w-0">
                       <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate max-w-md">{r.title}</h4>
                       <p className="text-xs text-slate-400 dark:text-slate-505">Submitted: {new Date(r.date_submitted).toLocaleDateString()}</p>
                       
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
-                        {getStatusBadge(r.status)}
+                        {getStatusBadge(lifecycleStatus(r))}
                         <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">Goal: ₦{r.amount_needed.toLocaleString()}</span>
                       </div>
                     </div>
@@ -157,7 +163,7 @@ export const StudentDashboard = () => {
                     </div>
 
                     <div className="flex gap-2">
-                      {r.status === 'pending' && (
+                      {['submitted', 'changes_requested'].includes(r.application_status) && (
                         <Link
                           to={`/student/requests/${r.request_id}/upload`}
                           className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-bold transition-all border border-slate-200/80 dark:border-slate-700"

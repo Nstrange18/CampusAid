@@ -7,6 +7,23 @@ const API_URL = import.meta.env.VITE_API_URL || (
 const ACCESS_TOKEN_KEY = "campusaid_token";
 const REFRESH_TOKEN_KEY = "campusaid_refresh_token";
 
+const formatErrorDetail = (detail) => {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail.map((item) => {
+      if (typeof item === "string") return item;
+      const field = Array.isArray(item?.loc)
+        ? item.loc.filter((part) => part !== "body").join(" → ")
+        : "";
+      return field ? `${field}: ${item?.msg || "Invalid value"}` : (item?.msg || "Invalid value");
+    }).join(". ");
+  }
+  if (detail && typeof detail === "object") {
+    return detail.message || detail.msg || JSON.stringify(detail);
+  }
+  return "An error occurred";
+};
+
 const clearStoredTokens = () => {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
@@ -93,7 +110,7 @@ async function request(path, options = {}) {
     let errorDetail = "An error occurred";
     try {
       const data = await response.json();
-      errorDetail = data.detail || errorDetail;
+      errorDetail = formatErrorDetail(data.detail || errorDetail);
     } catch (e) {
       // Response is not JSON
     }

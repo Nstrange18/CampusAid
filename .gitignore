@@ -2,6 +2,8 @@
 campusaid.db
 campusaid.db-journal
 campusaid.db-wal
+.codex-test/
+dogfood-output/
 
 # Python
 __pycache__/

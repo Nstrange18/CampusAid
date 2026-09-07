@@ -13,10 +13,12 @@ const requestSchema = z.object({
   purpose: z.string().min(1, "Purpose/Category is required"),
   amountNeeded: z.coerce.number().positive("Amount needed must be a positive number"),
   urgencyLevel: z.enum(["low", "medium", "high"]),
-  reasonForRequest: z.string().min(1, "Reason for request is required"),
-  parentOccupation: z.string().min(1, "Parent/guardian occupation is required"),
-  previousSupport: z.enum(["yes", "no"]),
-  supportingStatement: z.string().min(1, "Supporting statement is required"),
+  supportNeedDescription: z.string().min(20, "Please describe the support you need"),
+  functionalImpact: z.string().min(20, "Please describe how the disability affects your studies"),
+  requestedSupportType: z.string().min(1, "Support type is required"),
+  publicStory: z.string().min(20, "Please provide a short public campaign story"),
+  displayPreference: z.enum(["full_name", "first_name_initial", "anonymous"]),
+  publicConsent: z.literal(true, { error: "Consent is required before a campaign can be published" }),
   
   // Optional bank fields: if one is entered, all three must be entered.
   bankName: z.string().optional().or(z.literal("")),
@@ -54,10 +56,12 @@ export const RequestForm = () => {
       purpose: "Tuition Fees",
       amountNeeded: "",
       urgencyLevel: "medium",
-      reasonForRequest: "",
-      parentOccupation: "",
-      previousSupport: "no",
-      supportingStatement: "",
+      supportNeedDescription: "",
+      functionalImpact: "",
+      requestedSupportType: "Assistive technology",
+      publicStory: "",
+      displayPreference: "first_name_initial",
+      publicConsent: false,
       bankName: "",
       accountName: "",
       accountNumber: ""
@@ -73,14 +77,18 @@ export const RequestForm = () => {
         description: data.description,
         purpose: data.purpose,
         amount_needed: data.amountNeeded,
-        reason_for_request: data.reasonForRequest,
+        reason_for_request: data.supportNeedDescription,
         urgency_level: data.urgencyLevel,
         student_bank_name: data.bankName || null,
         student_account_name: data.accountName || null,
         student_account_number: data.accountNumber || null,
-        parent_or_guardian_occupation: data.parentOccupation,
-        previous_support_received: data.previousSupport,
-        supporting_statement: data.supportingStatement
+        supporting_statement: data.publicStory,
+        support_need_description: data.supportNeedDescription,
+        functional_impact: data.functionalImpact,
+        requested_support_type: data.requestedSupportType,
+        public_story: data.publicStory,
+        public_display_preference: data.displayPreference,
+        public_consent: data.publicConsent
       });
 
       // Redirect to upload documents page for this request
@@ -106,7 +114,7 @@ export const RequestForm = () => {
         </button>
         <div>
           <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">New Fundraising Application</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Provide details of your financial need for administrator verification</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Describe the disability-related support you need for your studies</p>
         </div>
       </div>
 
@@ -144,9 +152,9 @@ export const RequestForm = () => {
             </div>
 
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Detailed Description</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Application Background (Private to Administrators)</label>
               <textarea
-                placeholder="Explain the background details of your academic and personal situation. This will be visible to donors if approved."
+                placeholder="Give administrators any additional context needed to review this application. Donors will see only the separate public campaign story below."
                 {...register("description")}
                 rows={4}
                 className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
@@ -209,71 +217,90 @@ export const RequestForm = () => {
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors duration-300">
           <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
             <HelpCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">2. Indigent Verification Details</h4>
+            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">2. Disability Support Details</h4>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Detailed Reason for Request (Private to Admin)</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Support Needed (Private to Administrators)</label>
               <textarea
-                placeholder="What exactly led to this financial need? Explain clearly so the Administrator can understand your need."
-                {...register("reasonForRequest")}
+                placeholder="Describe the equipment, service, accommodation, or other support you need."
+                {...register("supportNeedDescription")}
                 rows={3}
                 className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
-                  errors.reasonForRequest 
+                  errors.supportNeedDescription
                     ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
                     : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500 dark:text-slate-100'
                 }`}
               />
-              {errors.reasonForRequest && (
-                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.reasonForRequest.message}</p>
+              {errors.supportNeedDescription && (
+                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.supportNeedDescription.message}</p>
               )}
             </div>
 
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Parent or Guardian's Occupation</label>
-              <input
-                type="text"
-                placeholder="e.g. Retired Civil Servant, Trader, Unemployed"
-                {...register("parentOccupation")}
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Functional Impact (Private to Administrators)</label>
+              <textarea
+                placeholder="Explain how the disability or physical barrier affects learning, mobility, communication, or campus access."
+                {...register("functionalImpact")}
+                rows={3}
                 className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
-                  errors.parentOccupation 
+                  errors.functionalImpact
                     ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
                     : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500 dark:text-slate-100'
                 }`}
               />
-              {errors.parentOccupation && (
-                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.parentOccupation.message}</p>
+              {errors.functionalImpact && (
+                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.functionalImpact.message}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Have you received support/scholarship previously?</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Requested Support Type</label>
               <select
-                {...register("previousSupport")}
+                {...register("requestedSupportType")}
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 transition-all dark:text-slate-100"
               >
-                <option value="no">No previous support received</option>
-                <option value="yes">Yes, I have received support before</option>
+                <option>Assistive technology</option>
+                <option>Mobility support</option>
+                <option>Accessible learning materials</option>
+                <option>Medical or rehabilitation support</option>
+                <option>Accessible accommodation</option>
+                <option>Other disability-related support</option>
               </select>
             </div>
 
             <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Supporting Statement</label>
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Public Campaign Story</label>
               <textarea
-                placeholder="A brief message on how this funding will impact your academic studies."
-                {...register("supportingStatement")}
+                placeholder="Describe the support and its expected impact without including diagnoses or private medical details."
+                {...register("publicStory")}
                 rows={3}
                 className={`w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 transition-all ${
-                  errors.supportingStatement 
+                  errors.publicStory
                     ? 'border-red-500 focus:ring-red-500/25 focus:border-red-500' 
                     : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500/25 focus:border-blue-500 dark:text-slate-100'
                 }`}
               />
-              {errors.supportingStatement && (
-                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.supportingStatement.message}</p>
+              {errors.publicStory && (
+                <p className="text-[10px] text-red-500 font-bold animate-fade-in">{errors.publicStory.message}</p>
               )}
             </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 dark:text-slate-400">Public Name Display</label>
+              <select {...register("displayPreference")} className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-sm dark:text-slate-100">
+                <option value="first_name_initial">First name and last initial</option>
+                <option value="full_name">Full name</option>
+                <option value="anonymous">Anonymous student</option>
+              </select>
+            </div>
+
+            <label className="md:col-span-2 flex items-start gap-3 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400">
+              <input type="checkbox" {...register("publicConsent")} className="mt-0.5 h-4 w-4" />
+              <span>I consent to the approved public story and selected name format being shown to donors. My private evidence and functional-impact statement must remain restricted to authorized administrators.</span>
+            </label>
+            {errors.publicConsent && <p className="md:col-span-2 text-[10px] text-red-500 font-bold">{errors.publicConsent.message}</p>}
           </div>
         </div>
 

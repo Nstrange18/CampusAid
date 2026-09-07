@@ -85,7 +85,7 @@ export const CampaignDetails = () => {
             <div className="space-y-2">
               <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 leading-snug">{campaign.title}</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
-                Student Profile: {student.full_name} ({student.department}, {student.level})
+                Beneficiary: {student.full_name}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-300 leading-relaxed whitespace-pre-wrap pt-2">
                 {campaign.description}
@@ -95,16 +95,10 @@ export const CampaignDetails = () => {
             <div className="p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
               <h5 className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
                 <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                Supporting Statement & Reason
+                Disability-related Support
               </h5>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed italic">
-                "{campaign.supporting_statement}"
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed pt-2">
-                <span className="font-semibold text-slate-700 dark:text-slate-350">Reason for Request:</span> {campaign.reason_for_request}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                <span className="font-semibold text-slate-700 dark:text-slate-350">Parent/Guardian Occupation:</span> {campaign.parent_or_guardian_occupation}
+                {campaign.requested_support_type || campaign.purpose}
               </p>
             </div>
           </div>
@@ -179,9 +173,9 @@ export const CampaignDetails = () => {
 
             <div className="h-[1px] bg-slate-100 dark:bg-slate-800" />
 
-            {campaign.status === "completed" ? (
+            {campaign.status === "funded" || campaign.status === "closed" ? (
               <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-450 text-xs font-bold rounded-xl border border-emerald-100 dark:border-emerald-900/30 text-center">
-                Campaign completed! target reached.
+                Campaign funded! The target has been reached.
               </div>
             ) : (
               <Link
@@ -200,7 +194,7 @@ export const CampaignDetails = () => {
               Campus Verification Guard
             </h5>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
-              This request was fully reviewed by the Dean of Student Affairs. Academic standing and indigent status documents are audited and held in campus trust storage.
+              This campaign was reviewed by authorized campus administrators. Private disability evidence is not included in the public campaign.
             </p>
           </div>
         </div>

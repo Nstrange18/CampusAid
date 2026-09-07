@@ -1,15 +1,27 @@
 import os
 import uuid
 import shutil
+import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from ..database import get_db
 from .. import models, schemas, auth
 from ..utils import validate_upload_file, rate_limit_upload
-from ..cloudinary_helper import upload_to_cloudinary
+from ..cloudinary_helper import upload_private_document, create_private_download_url
 
 
 router = APIRouter(prefix="/students", tags=["Students"])
+
+ALLOWED_DISABILITY_DOCUMENT_TYPES = {
+    "student_id_card",
+    "university_support_office",
+    "medical_professional_report",
+    "government_disability_certificate",
+    "accessibility_assessment",
+    "assistive_device_quote",
+    "support_cost_quote",
+    "approved_alternative",
+}
 
 # Ensure uploads directory exists
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
@@ -62,10 +74,11 @@ def create_fundraising_request(request_in: schemas.FundraisingRequestCreate, cur
     if not student:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student record not found")
 
-    # Check if there is already a pending or active request to avoid spam
+    # Prevent overlapping open applications or campaigns.
     existing_pending = db.query(models.FundraisingRequest).filter(
         models.FundraisingRequest.student_id == student.student_id,
-        models.FundraisingRequest.status.in_(["pending", "approved"])
+        models.FundraisingRequest.application_status.in_(["submitted", "under_review", "changes_requested", "approved"]),
+        models.FundraisingRequest.campaign_status.notin_(["closed", "cancelled"]),
     ).first()
     if existing_pending:
         raise HTTPException(
@@ -88,7 +101,16 @@ def create_fundraising_request(request_in: schemas.FundraisingRequestCreate, cur
         student_account_number=request_in.student_account_number,
         parent_or_guardian_occupation=request_in.parent_or_guardian_occupation,
         previous_support_received=request_in.previous_support_received,
-        supporting_statement=request_in.supporting_statement
+        supporting_statement=request_in.supporting_statement,
+        support_need_description=request_in.support_need_description,
+        functional_impact=request_in.functional_impact,
+        requested_support_type=request_in.requested_support_type,
+        public_story=request_in.public_story,
+        public_display_preference=request_in.public_display_preference,
+        public_consent=request_in.public_consent,
+        public_consent_at=datetime.datetime.utcnow() if request_in.public_consent else None,
+        application_status="submitted",
+        campaign_status="unpublished"
     )
     db.add(new_request)
     db.commit()
@@ -137,22 +159,25 @@ def upload_request_document(
     if not request:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fundraising request not found or not owned by you")
 
-    if request.status != "pending":
+    if request.application_status not in ["submitted", "changes_requested"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot upload documents for requests that are already reviewed"
         )
 
+    if document_type not in ALLOWED_DISABILITY_DOCUMENT_TYPES:
+        raise HTTPException(status_code=400, detail="Unsupported disability evidence type")
+
     # Validate file format and size
     validate_upload_file(file)
 
-    # Upload to Cloudinary
-    db_file_path = upload_to_cloudinary(file, folder="verification_documents")
+    # Store disability evidence as an authenticated asset, without a public URL.
+    private_asset = upload_private_document(file, folder="verification_documents")
 
     new_doc = models.VerificationDocument(
         request_id=request.request_id,
         document_type=document_type,
-        file_path=db_file_path
+        **private_asset
     )
     db.add(new_doc)
     db.commit()
@@ -170,3 +195,24 @@ def upload_request_document(
     db.commit()
 
     return new_doc
+
+
+@router.get("/documents/{document_id}/access", response_model=schemas.PrivateDocumentAccessOut)
+def access_own_document(
+    document_id: int,
+    current_user: models.User = Depends(auth.get_current_student),
+    db: Session = Depends(get_db),
+):
+    student = db.query(models.Student).filter(models.Student.user_id == current_user.user_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student profile not found")
+    document = db.query(models.VerificationDocument).join(models.FundraisingRequest).filter(
+        models.VerificationDocument.document_id == document_id,
+        models.FundraisingRequest.student_id == student.student_id,
+    ).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    if not document.storage_key:
+        return {"url": document.file_path, "expires_at": datetime.datetime.now(datetime.timezone.utc)}
+    url, expires_at = create_private_download_url(document)
+    return {"url": url, "expires_at": datetime.datetime.fromtimestamp(expires_at, datetime.timezone.utc)}

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import List, Optional
+from typing import List, Literal, Optional
 from datetime import datetime
+from decimal import Decimal
 
 # Token Schemas
 class Token(BaseModel):
@@ -22,8 +23,8 @@ class UserBase(BaseModel):
     phone_number: str
 
 class UserCreate(UserBase):
-    password: str
-    role: str  # student, donor (admin registration is invite-only)
+    password: str = Field(..., min_length=8)
+    role: Literal["student", "donor"]
     
     # Optional fields for student, donor, admin registration details
     # Student specific
@@ -106,8 +107,8 @@ class VerificationDocumentOut(BaseModel):
     document_id: int
     request_id: int
     document_type: str
-    file_path: str
     upload_date: datetime
+    private_access_available: bool = True
 
     class Config:
         from_attributes = True
@@ -119,6 +120,9 @@ class VerificationChecklistBase(BaseModel):
     department_faculty_confirmed: bool = False
     documents_reviewed: bool = False
     financial_need_confirmed: bool = False
+    disability_evidence_confirmed: bool = False
+    support_need_confirmed: bool = False
+    evidence_pathway: Optional[str] = None
     requested_amount_reasonable: bool = False
     duplicate_support_checked: bool = False
     decision_recorded: bool = False
@@ -139,21 +143,27 @@ class VerificationChecklistOut(VerificationChecklistBase):
 class FundraisingRequestCreate(BaseModel):
     title: str
     description: str
-    amount_needed: float = Field(..., gt=0)
+    amount_needed: Decimal = Field(..., gt=0, max_digits=12, decimal_places=2)
     purpose: str
     reason_for_request: str
     urgency_level: str  # low, medium, high
     student_bank_name: Optional[str] = None
     student_account_name: Optional[str] = None
     student_account_number: Optional[str] = None
-    parent_or_guardian_occupation: str
-    previous_support_received: str  # yes, no
+    parent_or_guardian_occupation: Optional[str] = None  # legacy
+    previous_support_received: Optional[str] = None  # legacy
     supporting_statement: str
+    support_need_description: str
+    functional_impact: str
+    requested_support_type: str
+    public_story: Optional[str] = None
+    public_display_preference: str = "first_name_initial"
+    public_consent: bool = False
 
 class FundraisingRequestUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    amount_needed: Optional[float] = None
+    amount_needed: Optional[Decimal] = Field(None, gt=0, max_digits=12, decimal_places=2)
     purpose: Optional[str] = None
     reason_for_request: Optional[str] = None
     urgency_level: Optional[str] = None
@@ -163,14 +173,20 @@ class FundraisingRequestUpdate(BaseModel):
     parent_or_guardian_occupation: Optional[str] = None
     previous_support_received: Optional[str] = None
     supporting_statement: Optional[str] = None
+    support_need_description: Optional[str] = None
+    functional_impact: Optional[str] = None
+    requested_support_type: Optional[str] = None
+    public_story: Optional[str] = None
+    public_display_preference: Optional[str] = None
+    public_consent: Optional[bool] = None
 
 class FundraisingRequestOut(BaseModel):
     request_id: int
     student_id: int
     title: str
     description: str
-    amount_needed: float
-    amount_raised: float
+    amount_needed: Decimal
+    amount_raised: Decimal
     purpose: str
     status: str
     reason_for_request: str
@@ -178,9 +194,18 @@ class FundraisingRequestOut(BaseModel):
     student_bank_name: Optional[str] = None
     student_account_name: Optional[str] = None
     student_account_number: Optional[str] = None
-    parent_or_guardian_occupation: str
-    previous_support_received: str
+    parent_or_guardian_occupation: Optional[str] = None
+    previous_support_received: Optional[str] = None
     supporting_statement: str
+    support_need_description: Optional[str] = None
+    functional_impact: Optional[str] = None
+    requested_support_type: Optional[str] = None
+    public_story: Optional[str] = None
+    public_display_preference: str = "first_name_initial"
+    public_consent: bool = False
+    public_consent_at: Optional[datetime] = None
+    application_status: str = "submitted"
+    campaign_status: str = "unpublished"
     admin_decision_reason: Optional[str]
     date_submitted: datetime
     student: Optional[StudentOut] = None
@@ -191,44 +216,18 @@ class FundraisingRequestOut(BaseModel):
         from_attributes = True
 
 
-class UserPublicOut(BaseModel):
-    full_name: str
-
-    class Config:
-        from_attributes = True
-
-
-class StudentPublicOut(BaseModel):
-    student_id: int
-    department: str
-    faculty: str
-    level: str
-    user: UserPublicOut
-
-    class Config:
-        from_attributes = True
-
-
 class CampaignPublicOut(BaseModel):
     request_id: int
-    student_id: int
     title: str
     description: str
-    amount_needed: float
-    amount_raised: float
+    amount_needed: Decimal
+    amount_raised: Decimal
     purpose: str
     status: str
-    reason_for_request: str
     urgency_level: str
-    parent_or_guardian_occupation: str
-    previous_support_received: str
-    supporting_statement: str
-    admin_decision_reason: Optional[str] = None
+    requested_support_type: Optional[str] = None
+    beneficiary_display_name: str
     date_submitted: datetime
-    student: Optional[StudentPublicOut] = None
-
-    class Config:
-        from_attributes = True
 
 
 # Donation Account schemas
@@ -250,22 +249,34 @@ class DonationAccountOut(DonationAccountCreate):
 # Donation Record schemas
 class DonationRecordCreate(BaseModel):
     request_id: int
-    amount: float = Field(..., gt=0)
+    amount: Decimal = Field(..., gt=0, max_digits=12, decimal_places=2)
     transaction_reference: str
+
+
+class DonationRequestSummaryOut(BaseModel):
+    request_id: int
+    title: str
+    purpose: str
+
+    class Config:
+        from_attributes = True
 
 class DonationRecordOut(BaseModel):
     donation_id: int
     donor_id: int
     request_id: int
-    amount: float
+    amount: Decimal
     transaction_reference: str
-    proof_file: Optional[str] = None
+    proof_access_available: bool = False
     donation_date: datetime
     verification_status: str
+    rejection_reason: Optional[str] = None
     verified_by: Optional[int]
     verified_at: Optional[datetime]
     donor: Optional[DonorOut] = None
-    request: Optional[FundraisingRequestOut] = None
+    # Deliberately limited: donors must never receive the student's private
+    # application, evidence metadata, banking details, or admin review notes.
+    request: Optional[DonationRequestSummaryOut] = None
 
     class Config:
         from_attributes = True
@@ -301,7 +312,7 @@ class DisbursementCreate(BaseModel):
     request_id: int
     recipient_type: str  # school, hostel, hospital, vendor, student_exception
     recipient_name: str
-    amount_disbursed: float = Field(..., gt=0)
+    amount_disbursed: Decimal = Field(..., gt=0, max_digits=12, decimal_places=2)
     payment_reference: str
     disbursement_notes: Optional[str] = None
 
@@ -311,9 +322,9 @@ class DisbursementOut(BaseModel):
     admin_id: Optional[int] = None
     recipient_type: str
     recipient_name: str
-    amount_disbursed: float
+    amount_disbursed: Decimal
     payment_reference: str
-    evidence_file: Optional[str] = None
+    evidence_access_available: bool = False
     disbursement_status: str
     disbursement_notes: Optional[str] = None
     disbursed_at: datetime
@@ -342,7 +353,7 @@ class AdminRegisterViaInvite(BaseModel):
     full_name: str
     email: EmailStr
     phone_number: str
-    password: str
+    password: str = Field(..., min_length=8)
     staff_id: str
     position: str
 
@@ -362,3 +373,8 @@ class ActivityLogOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PrivateDocumentAccessOut(BaseModel):
+    url: str
+    expires_at: datetime
