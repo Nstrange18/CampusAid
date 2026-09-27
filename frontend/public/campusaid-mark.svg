@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">CampusAid</title>
+  <rect width="64" height="64" rx="16" fill="#2563eb"/>
+  <g fill="none" stroke="#fff" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m19 15 12-6 12 6-12 6-12-6Z"/>
+    <path d="M43 15v7"/>
+    <circle cx="31" cy="27" r="4.5"/>
+    <path d="M31 33v12h12l6 11h6"/>
+    <path d="M31 39h9"/>
+    <path d="M35 56a15 15 0 1 1-14-21"/>
+  </g>
+</svg>
