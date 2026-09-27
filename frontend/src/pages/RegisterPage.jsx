@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { GraduationCap, User, Phone, Mail, Lock, BookOpen, Layers, Landmark, Sun, Moon, ChevronDown } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { BrandMark } from '../components/BrandMark';
 
 // ── Faculty → Departments mapping ──────────────────────────────────────────────
 const FACULTY_DEPARTMENTS = {
@@ -291,8 +292,8 @@ export const RegisterPage = () => {
         
         {/* Header */}
         <div className="flex flex-col items-center text-center space-y-2">
-          <Link to="/" className="p-3 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-2xl border border-blue-100 dark:border-blue-900/40 flex items-center justify-center transition-colors duration-300">
-            <GraduationCap className="h-8 w-8" />
+          <Link to="/" className="rounded-2xl transition-transform duration-300 hover:scale-105" aria-label="Back to CampusAid home">
+            <BrandMark className="h-14 w-14 rounded-2xl" iconClassName="h-9 w-9" />
           </Link>
           <h2 className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100 transition-colors duration-300">Create Account</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-300">Sign up and join CampusAid today</p>
@@ -441,7 +442,7 @@ export const RegisterPage = () => {
                     </span>
                     <input
                       type="text"
-                      placeholder="UG/20/CSC/1042"
+                      placeholder="20XX/012345"
                       {...register("matricNumber")}
                       className={`w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-950/40 border rounded-xl text-sm focus:outline-none focus:ring-2 transition-all ${
                         errors.matricNumber 

@@ -4,6 +4,7 @@ import { api } from '../api';
 import { GraduationCap, HeartHandshake, ShieldCheck, ArrowRight, Search, Sparkles, Menu, X, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { BrandMark } from '../components/BrandMark';
 
 export const LandingPage = () => {
   const { user } = useAuth();
@@ -48,9 +49,7 @@ export const LandingPage = () => {
       <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 shadow-sm transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-blue-600 rounded-xl text-white">
-              <GraduationCap className="h-6 w-6" />
-            </div>
+            <BrandMark className="h-10 w-10" iconClassName="h-7 w-7" />
             <div>
               <span className="font-extrabold text-xl text-slate-900 dark:text-slate-100 tracking-tight transition-colors duration-300">CampusAid</span>
               <span className="block text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider -mt-1 transition-colors duration-300">Disability Support</span>
@@ -294,7 +293,7 @@ export const LandingPage = () => {
       <footer className="mt-auto bg-white dark:bg-slate-950 text-slate-500 dark:text-slate-500 py-12 px-4 border-t border-slate-200 dark:border-slate-900 transition-colors duration-300">
         <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-blue-500" />
+            <BrandMark className="h-9 w-9" iconClassName="h-6 w-6" />
             <span className="font-extrabold text-lg text-slate-900 dark:text-white">CampusAid</span>
           </div>
           <p className="text-xs text-center md:text-right">&copy; 2026 CampusAid Welfare Management System. All rights reserved.</p>
