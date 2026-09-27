@@ -5,8 +5,9 @@ import { useTheme } from '../context/ThemeContext';
 import { 
   LayoutDashboard, HeartHandshake, History, User, Bell, 
   PlusCircle, CheckSquare, DollarSign, FileBarChart, 
-  Users, LogOut, Menu, X, ChevronRight, GraduationCap, Sun, Moon
+  Users, LogOut, Menu, X, ChevronRight, Sun, Moon
 } from 'lucide-react';
+import { BrandMark } from '../components/BrandMark';
 
 export const DashboardLayout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -89,9 +90,7 @@ export const DashboardLayout = ({ children }) => {
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:w-64 lg:h-screen lg:shrink-0 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex-col border-r border-slate-200/80 dark:border-slate-900 shadow-xl transition-all duration-300">
         <div className="p-6 flex items-center gap-3 bg-white dark:bg-slate-950 border-b border-slate-200/80 dark:border-slate-900">
-          <div className="p-2 bg-blue-600 rounded-lg text-white">
-            <GraduationCap className="h-6 w-6" />
-          </div>
+          <BrandMark className="h-10 w-10" iconClassName="h-7 w-7" />
           <div>
             <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-650 dark:from-blue-400 dark:to-indigo-200 bg-clip-text text-transparent">CampusAid</h1>
             <p className="text-[10px] text-slate-500 dark:text-slate-400 tracking-widest uppercase">Student Welfare</p>
@@ -146,7 +145,7 @@ export const DashboardLayout = ({ children }) => {
       {/* Mobile Menu & Header */}
       <div className="lg:hidden flex items-center justify-between p-4 bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-900 shadow-sm z-20 transition-colors duration-300">
         <div className="flex items-center gap-2">
-          <GraduationCap className="h-5 w-5 text-blue-500" />
+          <BrandMark className="h-8 w-8" iconClassName="h-5 w-5" />
           <span className="font-bold text-lg">CampusAid</span>
         </div>
         <div className="flex items-center gap-2.5">
@@ -171,7 +170,7 @@ export const DashboardLayout = ({ children }) => {
         }`}>
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-blue-500" />
+              <BrandMark className="h-8 w-8" iconClassName="h-5 w-5" />
               <span className="font-bold text-lg">CampusAid</span>
             </div>
             <button 
