@@ -172,7 +172,7 @@ export const LandingPage = () => {
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
             Supporting Students with Physical Disabilities<br />
-            <span className="bg-gradient-to-r from-blue-300 via-indigo-300 to-sky-300 bg-clip-text text-transparent animate-pulse">Through Structured Aid</span>
+            <span className="bg-linear-to-r from-blue-300 via-indigo-300 to-sky-300 bg-clip-text text-transparent animate-pulse">Through Structured Aid</span>
           </h1>
           <p className="text-slate-200 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
             CampusAid connects financially constrained students with verified campus administrators and generous donors. Securely managed, verified, and transparent.
