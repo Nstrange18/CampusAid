@@ -5,8 +5,9 @@ import { useTheme } from '../context/ThemeContext';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { GraduationCap, Lock, Mail, Eye, EyeOff, Sun, Moon } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, Sun, Moon } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { BrandMark } from '../components/BrandMark';
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email address"),
@@ -75,8 +76,8 @@ export const LoginPage = () => {
         
         {/* Header */}
         <div className="flex flex-col items-center text-center space-y-2">
-          <Link to="/" className="p-3 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-2xl border border-blue-100 dark:border-blue-900/40 flex items-center justify-center transition-colors duration-300">
-            <GraduationCap className="h-8 w-8" />
+          <Link to="/" className="rounded-2xl transition-transform duration-300 hover:scale-105" aria-label="Back to CampusAid home">
+            <BrandMark className="h-14 w-14 rounded-2xl" iconClassName="h-9 w-9" />
           </Link>
           <h2 className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100 transition-colors duration-300">Welcome Back</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors duration-300">Sign in to access your CampusAid account</p>

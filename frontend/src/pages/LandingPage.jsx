@@ -1,20 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { api } from "../api";
-import {
-  GraduationCap,
-  HeartHandshake,
-  ShieldCheck,
-  ArrowRight,
-  Search,
-  Sparkles,
-  Menu,
-  X,
-  Sun,
-  Moon,
-} from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { api } from '../api';
+import { GraduationCap, HeartHandshake, ShieldCheck, ArrowRight, Search, Sparkles, Menu, X, Sun, Moon } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import { BrandMark } from '../components/BrandMark';
 
 export const LandingPage = () => {
   const { user } = useAuth();
@@ -64,9 +54,7 @@ export const LandingPage = () => {
       <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 shadow-sm transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-blue-600 rounded-xl text-white">
-              <GraduationCap className="h-6 w-6" />
-            </div>
+            <BrandMark className="h-10 w-10" iconClassName="h-7 w-7" />
             <div>
               <span className="font-extrabold text-xl text-slate-900 dark:text-slate-100 tracking-tight transition-colors duration-300">
                 CampusAid
@@ -168,24 +156,26 @@ export const LandingPage = () => {
         )}
       </nav>
 
-      <header className="relative bg-linear-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-950 dark:to-slate-900 text-slate-900 dark:text-white py-20 px-4 text-center overflow-hidden transition-colors duration-300">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(59,130,246,0.18),rgba(255,255,255,0))]" />
+      <header className="relative bg-slate-950 text-white py-20 px-4 text-center overflow-hidden">
+        <img
+          src="/campusaid-hero.webp"
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-slate-950/65" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_65%_75%_at_50%_45%,rgba(15,23,42,0.82),rgba(15,23,42,0.18))]" />
         <div className="max-w-4xl mx-auto relative z-10 space-y-6 animate-fade-in">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/30 rounded-full text-blue-600 dark:text-blue-300 text-xs font-semibold uppercase tracking-wider backdrop-blur-sm animate-pulse">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-400/30 rounded-full text-blue-200 text-xs font-semibold uppercase tracking-wider backdrop-blur-sm animate-pulse">
             <Sparkles className="h-3.5 w-3.5" />
             Empowering Higher Education
           </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
-            Supporting Students with Physical Disabilities
-            <br />
-            <span className="bg-linear-to-r from-blue-600 via-indigo-600 to-sky-600 dark:from-blue-400 dark:via-indigo-300 dark:to-sky-300 bg-clip-text text-transparent animate-pulse">
-              Through Structured Aid
-            </span>
+            Supporting Students with Physical Disabilities<br />
+            <span className="bg-gradient-to-r from-blue-300 via-indigo-300 to-sky-300 bg-clip-text text-transparent animate-pulse">Through Structured Aid</span>
           </h1>
-          <p className="text-slate-600 dark:text-slate-300 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-            CampusAid connects financially constrained students with verified
-            campus administrators and generous donors. Securely managed,
-            verified, and transparent.
+          <p className="text-slate-200 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+            CampusAid connects financially constrained students with verified campus administrators and generous donors. Securely managed, verified, and transparent.
           </p>
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4 pt-4">
             <Link
@@ -195,9 +185,9 @@ export const LandingPage = () => {
               Start Fundraising
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <a
-              href="#campaigns"
-              className="w-full sm:w-auto flex items-center justify-center px-8 py-3.5 bg-slate-200/50 hover:bg-slate-200 text-slate-800 dark:bg-slate-800/80 dark:hover:bg-slate-707/80 dark:text-slate-100 rounded-xl font-bold border border-slate-300 dark:border-slate-700 backdrop-blur-sm transition-all cursor-pointer"
+            <a 
+              href="#campaigns" 
+              className="w-full sm:w-auto flex items-center justify-center px-8 py-3.5 bg-slate-900/65 hover:bg-slate-800/80 text-slate-100 rounded-xl font-bold border border-slate-500/60 backdrop-blur-sm transition-all cursor-pointer"
             >
               Browse Campaigns
             </a>
@@ -390,10 +380,8 @@ export const LandingPage = () => {
       <footer className="mt-auto bg-white dark:bg-slate-950 text-slate-500 dark:text-slate-500 py-12 px-4 border-t border-slate-200 dark:border-slate-900 transition-colors duration-300">
         <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-blue-500" />
-            <span className="font-extrabold text-lg text-slate-900 dark:text-white">
-              CampusAid
-            </span>
+            <BrandMark className="h-9 w-9" iconClassName="h-6 w-6" />
+            <span className="font-extrabold text-lg text-slate-900 dark:text-white">CampusAid</span>
           </div>
           <p className="text-xs text-center md:text-right">
             &copy; 2026 CampusAid Welfare Management System. All rights
